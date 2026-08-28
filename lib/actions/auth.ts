@@ -7,12 +7,28 @@ import { createClient } from "@/utils/supabase/server";
 export async function signUp(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const passwordConfirm = String(formData.get("password_confirm") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const studentId = String(formData.get("student_id") ?? "").trim();
   const affiliation = String(formData.get("affiliation") ?? "").trim();
 
   if (!email || !password || !name) {
     redirect(`/signup?error=${encodeURIComponent("이메일, 비밀번호, 이름은 필수입니다.")}`);
+  }
+
+  if (password.length < 6) {
+    redirect(`/signup?error=${encodeURIComponent("비밀번호는 6자 이상이어야 합니다.")}`);
+  }
+
+  if (password !== passwordConfirm) {
+    const params = new URLSearchParams({
+      error: "비밀번호가 일치하지 않습니다.",
+      name,
+      student_id: studentId,
+      affiliation,
+      email,
+    });
+    redirect(`/signup?${params.toString()}`);
   }
 
   const cookieStore = await cookies();

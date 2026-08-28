@@ -6,8 +6,6 @@ export type Role = "student" | "club_admin" | "super_admin";
 export type Profile = {
   id: string;
   name: string;
-  student_id: string | null;
-  affiliation: string | null;
   role: Role;
   locale_pref: "ko" | "en";
   created_at: string;
