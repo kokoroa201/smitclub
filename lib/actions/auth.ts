@@ -63,7 +63,16 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    const friendlyMessage =
+      error.message === "Invalid login credentials"
+        ? "이메일 또는 비밀번호가 올바르지 않습니다."
+        : error.message;
+
+    const params = new URLSearchParams({ error: friendlyMessage });
+    if (error.message === "Invalid login credentials") {
+      params.set("detail", error.message);
+    }
+    redirect(`/login?${params.toString()}`);
   }
 
   redirect("/");

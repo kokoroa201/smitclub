@@ -4,6 +4,7 @@ import { signIn } from "@/lib/actions/auth";
 export default async function LoginPage(props: PageProps<"/login">) {
   const params = await props.searchParams;
   const error = typeof params.error === "string" ? params.error : null;
+  const errorDetail = typeof params.detail === "string" ? params.detail : null;
 
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-sm flex-col justify-center gap-6 px-4 py-12">
@@ -13,7 +14,12 @@ export default async function LoginPage(props: PageProps<"/login">) {
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+          <p>{error}</p>
+          {errorDetail && (
+            <p className="mt-0.5 text-xs text-red-400">({errorDetail})</p>
+          )}
+        </div>
       )}
 
       <form action={signIn} className="flex flex-col gap-4">

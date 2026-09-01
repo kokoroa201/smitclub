@@ -1,26 +1,88 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #fffaf6;
+  --fg: #221c2b;
+  --card-bg: #ffffff;
+  --card-fg: #221c2b;
+  --muted-bg: #f5f1f9;
+  --muted-fg: #6e6580;
+  --border-c: #eee4f5;
+
+  /* Brand accents — Coral / Yellow / Blue / Purple */
+  --brand-coral: #ff6b5b;
+  --brand-coral-dark: #e34f3f;
+  --brand-coral-soft: #ffe3dd;
+
+  --brand-yellow: #ffc94d;
+  --brand-yellow-dark: #f0ac00;
+  --brand-yellow-soft: #fff3d1;
+
+  --brand-blue: #4d8dff;
+  --brand-blue-dark: #2e6ce0;
+  --brand-blue-soft: #e2ecff;
+
+  --brand-purple: #9b6bff;
+  --brand-purple-dark: #7c4de0;
+  --brand-purple-soft: #efe4ff;
+
+  --card-radius: 1.5rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--card-fg);
+  --color-muted: var(--muted-bg);
+  --color-muted-foreground: var(--muted-fg);
+  --color-border: var(--border-c);
+
+  --color-coral: var(--brand-coral);
+  --color-coral-dark: var(--brand-coral-dark);
+  --color-coral-soft: var(--brand-coral-soft);
+
+  --color-yellow: var(--brand-yellow);
+  --color-yellow-dark: var(--brand-yellow-dark);
+  --color-yellow-soft: var(--brand-yellow-soft);
+
+  --color-blue: var(--brand-blue);
+  --color-blue-dark: var(--brand-blue-dark);
+  --color-blue-soft: var(--brand-blue-soft);
+
+  --color-purple: var(--brand-purple);
+  --color-purple-dark: var(--brand-purple-dark);
+  --color-purple-soft: var(--brand-purple-soft);
+
+  --radius-card: var(--card-radius);
+
+  --font-sans: var(--font-pretendard);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #17131d;
+    --fg: #f3eef9;
+    --card-bg: #211c29;
+    --card-fg: #f3eef9;
+    --muted-bg: #2a2433;
+    --muted-fg: #a89bbd;
+    --border-c: #362f42;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    var(--font-sans),
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    sans-serif;
+}
+
+/* 접근성: 큰 글씨 모드 — rem 기반 Tailwind 유틸리티 전체가 함께 커지므로
+   카드/내비게이션 등 레이아웃은 비율 그대로 유지된 채 확대된다. */
+html[data-font-size="large"] {
+  font-size: 118%;
 }
