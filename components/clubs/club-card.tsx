@@ -15,12 +15,15 @@ export type ClubCardData = {
 export function ClubCard({ club }: { club: ClubCardData }) {
   const meetingInfo = [club.meetingDay, club.meetingLocation].filter(Boolean).join(" · ");
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
+  // suda.png는 원본이 어둡고 채도가 낮아 Hero의 선명한 색감과 따로 노는
+  // 느낌이 들어서, 이 이미지에 한해서만 밝기/대비/채도를 살짝 보정한다.
+  const coverFilter = club.slug === "suda" ? "brightness(1.1) contrast(1.05) saturate(1.2)" : undefined;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-white">
       <div
         className="relative flex h-28 w-full shrink-0 items-center justify-center bg-muted bg-cover bg-center sm:h-52 lg:h-56"
-        style={club.coverImageUrl ? { backgroundImage: `url(${club.coverImageUrl})` } : undefined}
+        style={club.coverImageUrl ? { backgroundImage: `url(${club.coverImageUrl})`, filter: coverFilter } : undefined}
       >
         {!club.coverImageUrl && <CategoryIcon className="h-9 w-9 text-muted-foreground/30" strokeWidth={1.5} />}
         <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-foreground ring-1 ring-border sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
@@ -32,9 +35,9 @@ export function ClubCard({ club }: { club: ClubCardData }) {
         <span className="w-fit rounded-full bg-coral-soft px-2 py-0.5 text-[11px] font-semibold text-coral-dark sm:px-2.5 sm:py-1 sm:text-xs">
           {club.category}
         </span>
-        <h3 className="text-base font-bold tracking-tight text-foreground sm:text-xl">{club.name}</h3>
+        <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-2xl">{club.name}</h3>
         {club.description && (
-          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:line-clamp-3 sm:text-sm">
+          <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:line-clamp-3 sm:text-base">
             {club.description}
           </p>
         )}

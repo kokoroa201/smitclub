@@ -7,6 +7,8 @@ import type { ClubCardData } from "@/components/clubs/club-card";
 // 그리드용)와 별개로, 175~185px 고정폭 + snap-scroll에 맞춘 축소 레이아웃.
 export function ClubCardMini({ club }: { club: ClubCardData }) {
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
+  // ClubCard와 동일한 이유로 suda.png에만 밝기/대비/채도 보정을 적용한다.
+  const coverFilter = club.slug === "suda" ? "brightness(1.1) contrast(1.05) saturate(1.2)" : undefined;
 
   return (
     <Link
@@ -15,7 +17,7 @@ export function ClubCardMini({ club }: { club: ClubCardData }) {
     >
       <div
         className="relative flex h-[84px] w-full shrink-0 items-center justify-center bg-muted bg-cover bg-center"
-        style={club.coverImageUrl ? { backgroundImage: `url(${club.coverImageUrl})` } : undefined}
+        style={club.coverImageUrl ? { backgroundImage: `url(${club.coverImageUrl})`, filter: coverFilter } : undefined}
       >
         {!club.coverImageUrl && <CategoryIcon className="h-7 w-7 text-muted-foreground/30" strokeWidth={1.5} />}
         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-foreground ring-1 ring-border">
@@ -27,9 +29,9 @@ export function ClubCardMini({ club }: { club: ClubCardData }) {
         <span className="w-fit rounded-full bg-coral-soft px-1.5 py-0.5 text-[10px] font-semibold text-coral-dark">
           {club.category}
         </span>
-        <h3 className="text-sm font-bold tracking-tight text-foreground">{club.name}</h3>
+        <h3 className="text-base font-bold tracking-tight text-foreground">{club.name}</h3>
         {club.description && (
-          <p className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{club.description}</p>
+          <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{club.description}</p>
         )}
         <span className="mt-auto inline-flex w-full items-center justify-center rounded-full bg-coral py-1.5 text-[11px] font-semibold text-white">
           가입 신청

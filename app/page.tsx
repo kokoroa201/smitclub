@@ -86,16 +86,16 @@ export default async function Home() {
           제거(하단/상단 내비의 MAKE·동아리 진입점과 중복되어 있었음). */}
       <div className="hidden sm:block">
         <section className="px-4 pt-4 sm:pt-6">
-          <div className="relative mx-auto min-h-[380px] max-w-6xl overflow-hidden rounded-lg border border-border bg-white sm:min-h-[420px] lg:min-h-[480px]">
+          <div className="relative mx-auto min-h-[320px] max-w-6xl overflow-hidden rounded-lg border border-border bg-white lg:min-h-[340px]">
             <HeroArt />
-            <div className="relative z-10 w-[58%] px-5 py-10 sm:w-[52%] sm:px-8 sm:py-12 lg:w-[46%] lg:px-12 lg:py-16">
+            <div className="relative z-10 w-[44%] px-5 py-7 sm:px-7 sm:py-8 lg:w-[42%] lg:px-10 lg:py-9">
               <span className="inline-flex items-center rounded-full bg-coral-soft px-3 py-1 text-xs font-semibold text-coral-dark">
                 2026 동아리 시즌
               </span>
-              <h1 className="mt-4 text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+              <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
                 학교생활, <span className="text-coral">함께할 때</span> 더 즐거워요
               </h1>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
                 관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
               </p>
             </div>
@@ -104,7 +104,7 @@ export default async function Home() {
       </div>
 
       {/* 모집 중 동아리 — Hero 바로 아래, HOME의 핵심 콘텐츠 */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-5 sm:py-10 lg:py-12">
+      <section className="mx-auto w-full max-w-6xl px-4 py-5 sm:pb-10 sm:pt-7 lg:pb-12 lg:pt-8">
         <div className="flex items-end justify-between">
           <div>
             <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl lg:text-2xl">
