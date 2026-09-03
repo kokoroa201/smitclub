@@ -50,7 +50,7 @@ export default async function Home() {
         <section className="px-4 pt-3">
           <div className="relative min-h-[120px] max-h-[145px] overflow-hidden rounded-lg border border-border bg-white px-4 py-4">
             <div
-              className="pointer-events-none absolute bottom-0 right-0 h-[184px] w-[300px] opacity-25"
+              className="pointer-events-none absolute bottom-0 right-0 h-[184px] w-[300px] opacity-70"
               style={{
                 maskImage: "radial-gradient(140% 140% at 100% 100%, black 55%, transparent 92%)",
                 WebkitMaskImage: "radial-gradient(140% 140% at 100% 100%, black 55%, transparent 92%)",

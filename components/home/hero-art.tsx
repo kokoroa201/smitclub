@@ -20,10 +20,10 @@ export function HeroArt({
 
   if (failed) return null;
 
-  // 왼쪽 30%는 완전히 비우고, 62%까지 서서히 나타나 85% 지점부터 완전히
-  // 불투명해진다 — 좁은 모바일 화면에서도 텍스트 영역과 겹치지 않을 만큼
-  // 여유를 둔 폭.
-  const fadeMask = "linear-gradient(to right, transparent 0%, transparent 30%, rgba(0,0,0,0.85) 62%, black 85%)";
+  // 텍스트와 겹치는 이미지 왼쪽 구간(대략 sm 브레이크포인트에서 텍스트가
+  // 끝나는 지점까지)만 그라데이션으로 옅게 처리하고, 그 뒤로는 100%
+  // 불투명하게 유지한다.
+  const fadeMask = "linear-gradient(to right, transparent 0%, black 32%)";
 
   return (
     <div
