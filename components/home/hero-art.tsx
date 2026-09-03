@@ -20,10 +20,10 @@ export function HeroArt({
 
   if (failed) return null;
 
-  // 텍스트와 겹치는 이미지 왼쪽 구간(대략 sm 브레이크포인트에서 텍스트가
-  // 끝나는 지점까지)만 그라데이션으로 옅게 처리하고, 그 뒤로는 100%
-  // 불투명하게 유지한다.
-  const fadeMask = "linear-gradient(to right, transparent 0%, black 32%)";
+  // 텍스트와 겹치는 이미지 왼쪽 구간만 그라데이션으로 옅게 처리하고, 그
+  // 뒤로는 100% 불투명하게 유지한다. 카메라 든 학생이 이미지 왼쪽 끝에
+  // 있어 그라데이션 폭이 넓으면 그 친구까지 옅어져서 짧게 잡는다.
+  const fadeMask = "linear-gradient(to right, transparent 0%, black 18%)";
 
   return (
     <div
