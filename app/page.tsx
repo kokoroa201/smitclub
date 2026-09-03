@@ -1,12 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { ArrowRight, Rocket, Search, Users } from "lucide-react";
+import { ArrowRight, Sparkles, Users } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { ClubCard, type ClubCardData } from "@/components/clubs/club-card";
-import { CategoryExplorer } from "@/components/home/category-explorer";
+import { ClubCardMini } from "@/components/clubs/club-card-mini";
+import { NextClubCard, NextClubCardMini } from "@/components/home/next-club-card";
 import { SchoolNews } from "@/components/home/school-news";
 import { HeroArt } from "@/components/home/hero-art";
+import { HomeFreshness } from "@/components/home/home-freshness";
 
 async function getRecruitingClubs(): Promise<ClubCardData[]> {
   try {
@@ -39,101 +41,135 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section className="px-4 pt-4 sm:pt-5">
-        <div className="mx-auto max-w-6xl overflow-hidden rounded-card bg-gradient-to-br from-coral-soft via-yellow-soft to-blue-soft">
-          <div className="flex items-center gap-3 px-5 py-4 sm:gap-6 sm:px-8 sm:py-6 lg:gap-10 lg:px-12 lg:py-9">
-            <div className="flex-1">
-              <h1 className="text-[19px] font-extrabold leading-tight text-foreground sm:text-[26px] lg:text-4xl">
-                학교생활, 같이하면 더 재밌어요 <span className="inline-block">👋</span>
+      <HomeFreshness />
+
+      {/* 모바일 전용 Hero — 배지+제목+설명만, 120~145px 높이. CTA는 하단
+          MAKE 버튼/동아리 탭과 중복되므로 Hero 안에 두지 않는다.
+          640px(sm) 이상에서는 아래의 데스크톱 Hero로 대체된다. */}
+      <div className="sm:hidden">
+        <section className="px-4 pt-3">
+          <div className="relative min-h-[120px] max-h-[145px] overflow-hidden rounded-lg border border-border bg-white px-4 py-4">
+            <div
+              className="pointer-events-none absolute bottom-0 right-0 h-[184px] w-[300px] opacity-25"
+              style={{
+                maskImage: "radial-gradient(140% 140% at 100% 100%, black 55%, transparent 92%)",
+                WebkitMaskImage: "radial-gradient(140% 140% at 100% 100%, black 55%, transparent 92%)",
+              }}
+            >
+              <Image
+                src="/hero-students-5.png"
+                alt=""
+                fill
+                sizes="300px"
+                className="object-contain object-right-bottom"
+              />
+            </div>
+            <div className="relative z-10">
+              <span className="inline-flex items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
+                2026 동아리 시즌
+              </span>
+              <h1 className="mt-2 text-xl font-bold leading-snug tracking-tight text-foreground">
+                학교생활, <span className="text-coral">함께할 때</span> 더 즐거워요
               </h1>
-              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground sm:text-sm lg:text-base">
-                새로운 동아리를 만들거나 나에게 맞는 동아리를 찾아보세요.
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
               </p>
             </div>
+          </div>
+        </section>
+      </div>
+
+      {/* 태블릿/데스크톱 Hero — 하나의 장면처럼 보이는 배경 이미지. CTA 카드는
+          제거(하단/상단 내비의 MAKE·동아리 진입점과 중복되어 있었음). */}
+      <div className="hidden sm:block">
+        <section className="px-4 pt-4 sm:pt-6">
+          <div className="relative mx-auto min-h-[380px] max-w-6xl overflow-hidden rounded-lg border border-border bg-white sm:min-h-[420px] lg:min-h-[480px]">
             <HeroArt />
-          </div>
-        </div>
-      </section>
-
-      {/* 만들기 / 찾아보기 */}
-      <section className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-3 px-4 pt-5 sm:grid-cols-2 sm:gap-4 lg:pt-6">
-        <Link
-          href="/clubs/new"
-          className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-card bg-gradient-to-br from-coral to-coral-dark px-5 py-4 text-white shadow-md shadow-coral/25 transition-transform hover:scale-[1.01] sm:px-6 sm:py-5"
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20">
-              <Rocket className="h-4.5 w-4.5" />
-            </span>
-            <div>
-              <h3 className="text-base font-extrabold sm:text-lg">동아리 만들기</h3>
-              <p className="text-xs text-white/85 sm:text-sm">5명만 모이면 시작할 수 있어요</p>
+            <div className="relative z-10 w-[58%] px-5 py-10 sm:w-[52%] sm:px-8 sm:py-12 lg:w-[46%] lg:px-12 lg:py-16">
+              <span className="inline-flex items-center rounded-full bg-coral-soft px-3 py-1 text-xs font-semibold text-coral-dark">
+                2026 동아리 시즌
+              </span>
+              <h1 className="mt-4 text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+                학교생활, <span className="text-coral">함께할 때</span> 더 즐거워요
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
+              </p>
             </div>
           </div>
-          <ArrowRight className="h-5 w-5 shrink-0" />
-        </Link>
+        </section>
+      </div>
 
-        <Link
-          href="/clubs"
-          className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-card bg-gradient-to-br from-blue to-purple px-5 py-4 text-white shadow-md shadow-blue/25 transition-transform hover:scale-[1.01] sm:px-6 sm:py-5"
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20">
-              <Search className="h-4.5 w-4.5" />
-            </span>
-            <div>
-              <h3 className="text-base font-extrabold sm:text-lg">동아리 찾아보기</h3>
-              <p className="text-xs text-white/85 sm:text-sm">모집 중인 동아리를 만나보세요</p>
-            </div>
+      {/* 모집 중 동아리 — Hero 바로 아래, HOME의 핵심 콘텐츠 */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-5 sm:py-10 lg:py-12">
+        <div className="flex items-end justify-between">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl lg:text-2xl">
+              지금 모집 중인 동아리
+            </h2>
+            {clubs.length > 0 && (
+              <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                {clubs.length}개 동아리가 함께할 원우를 찾고 있어요.
+              </p>
+            )}
           </div>
-          <ArrowRight className="h-5 w-5 shrink-0" />
-        </Link>
-      </section>
-
-      {/* 모집 중 동아리 — HOME의 핵심 콘텐츠 */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-extrabold text-foreground sm:text-2xl">지금 모집 중인 동아리</h2>
-          <Link href="/clubs" className="text-xs font-bold text-muted-foreground hover:text-foreground sm:text-sm">
+          <Link href="/clubs" className="text-xs font-semibold text-muted-foreground hover:text-foreground sm:text-sm">
             전체보기
           </Link>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {clubs.map((club) => (
-            <ClubCard key={club.slug} club={club} />
-          ))}
-
-          <Link
-            href="/clubs/new"
-            className="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-card shadow-sm transition-transform hover:scale-[1.01] sm:flex-row"
-          >
-            <div className="flex flex-1 flex-col justify-center gap-3 p-6 sm:p-7 lg:p-8">
-              <span className="w-fit rounded-full bg-purple-soft px-2.5 py-1 text-xs font-bold text-purple-dark">
-                개설 대기 중
-              </span>
-              <h3 className="text-xl font-extrabold text-foreground sm:text-2xl">다음 동아리의 주인공은?</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-                하고 싶었던 활동을 직접 시작해보세요.
+        {clubs.length === 0 ? (
+          <div className="mt-3 flex flex-col items-center gap-4 rounded-lg border border-dashed border-border bg-white px-6 py-10 text-center sm:mt-5 sm:py-16">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-coral-soft text-coral-dark">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">아직 모집 중인 동아리가 없어요</h3>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                SMIT CLUB은 이제 막 시작했어요. 첫 동아리의 주인공이 되어보세요.
               </p>
-              <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-coral/30 transition-transform group-hover:scale-105">
-                동아리 만들기 <ArrowRight className="h-4 w-4" />
-              </span>
             </div>
-            <div className="relative h-40 w-full shrink-0 sm:h-auto sm:w-2/5 lg:w-1/2">
-              <Image src="/next-club.png" alt="" fill className="object-cover" />
+            <Link
+              href="/clubs/new"
+              className="inline-flex items-center gap-1.5 rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-coral/25 transition-colors hover:bg-coral-dark"
+            >
+              동아리 만들기 <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* 모바일 — 가로 스와이프형 카드. 섹션의 px-4를 그대로 물려받고
+                음수 마진으로 상쇄하지 않는다 — 첫 카드 left edge가 Hero/제목과
+                정확히 같은 세로선에 있어야 하므로 full-bleed로 빼지 않음. */}
+            <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:hidden">
+              {clubs.map((club) => (
+                <ClubCardMini key={club.slug} club={club} />
+              ))}
+              <NextClubCardMini />
             </div>
-          </Link>
-        </div>
+
+            {/* 태블릿/데스크톱 — 기존 그리드 */}
+            <div className="hidden sm:mt-5 sm:grid sm:grid-cols-2 sm:items-stretch sm:gap-5 lg:grid-cols-3">
+              {clubs.map((club) => (
+                <ClubCard key={club.slug} club={club} />
+              ))}
+              <NextClubCard />
+            </div>
+          </>
+        )}
       </section>
 
-      <CategoryExplorer />
+      {/* 학교 & 원우회 소식 — 모집 중 동아리 바로 아래 */}
       <SchoolNews />
 
+      {/* 이런 동아리 어때요? (카테고리 탐색)는 동아리 수가 늘어나 분류가
+          필요해지면 다시 노출한다. 컴포넌트는 components/home/category-explorer.tsx
+          에 그대로 남아있음 — 재활성화 시 이 자리에 <CategoryExplorer />만
+          추가하면 됨. */}
+
       {/* 통계 */}
-      <section className="mx-auto w-full max-w-6xl px-4 pb-10">
-        <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+      <section className="mx-auto w-full max-w-6xl px-4 pb-6 sm:pb-10">
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-white px-5 py-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-coral-soft text-coral-dark">
             <Users className="h-5 w-5" />
           </span>
