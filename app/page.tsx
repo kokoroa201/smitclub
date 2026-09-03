@@ -49,22 +49,25 @@ export default async function Home() {
       <div className="sm:hidden">
         <section className="px-4 pt-3">
           <div className="relative min-h-[120px] max-h-[145px] overflow-hidden rounded-lg border border-border bg-white px-4 py-4">
-            <div
-              className="pointer-events-none absolute bottom-0 right-0 h-[184px] w-[300px] opacity-70"
-              style={{
-                maskImage: "radial-gradient(140% 140% at 100% 100%, black 55%, transparent 92%)",
-                WebkitMaskImage: "radial-gradient(140% 140% at 100% 100%, black 55%, transparent 92%)",
-              }}
-            >
+            {/* 이미지는 오른쪽 38%에만 존재 — 텍스트 쪽으로 절대 넘어오지
+                않는다(위치 자체로 제한, opacity로만 가리는 방식 아님). */}
+            <div className="absolute inset-y-0 right-0 w-[38%]">
               <Image
                 src="/hero-students-5.png"
                 alt=""
                 fill
-                sizes="300px"
-                className="object-contain object-right-bottom"
+                sizes="150px"
+                className="object-cover object-right-bottom"
               />
             </div>
-            <div className="relative z-10">
+            {/* 이미지 위, 텍스트 아래에 깔리는 강한 흰색 그라데이션. 0~62%는
+                완전 불투명 흰색, 70%부터는 완전히 걷혀 이미지가 보인다 —
+                제목/설명 위로는 어떤 인물·색면도 지나가지 않는다. */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{ background: "linear-gradient(to right, #fff 0%, #fff 62%, rgba(255,255,255,0) 70%)" }}
+            />
+            <div className="relative z-10 w-[62%]">
               <span className="inline-flex items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
                 2026 동아리 시즌
               </span>
