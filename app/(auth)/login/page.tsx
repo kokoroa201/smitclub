@@ -5,6 +5,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
   const params = await props.searchParams;
   const error = typeof params.error === "string" ? params.error : null;
   const errorDetail = typeof params.detail === "string" ? params.detail : null;
+  const justReset = params.reset === "1";
 
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-sm flex-col justify-center gap-6 px-4 py-12">
@@ -12,6 +13,12 @@ export default async function LoginPage(props: PageProps<"/login">) {
         <h1 className="text-2xl font-bold">로그인</h1>
         <p className="mt-1 text-sm text-neutral-500">SMIT CLUB에 오신 것을 환영해요.</p>
       </div>
+
+      {justReset && !error && (
+        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.
+        </p>
+      )}
 
       {error && (
         <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
@@ -41,6 +48,9 @@ export default async function LoginPage(props: PageProps<"/login">) {
             className="rounded-md border border-neutral-300 px-3 py-2"
           />
         </label>
+        <Link href="/forgot-password" className="-mt-2 self-end text-xs text-neutral-500 underline hover:text-neutral-700">
+          비밀번호를 잊으셨나요?
+        </Link>
         <button
           type="submit"
           className="rounded-md bg-orange-500 px-4 py-2 font-medium text-white hover:bg-orange-600"

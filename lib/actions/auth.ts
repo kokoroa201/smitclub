@@ -1,8 +1,18 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+
+// 현재 요청이 도착한 호스트를 그대로 재설정 링크의 origin으로 쓴다 —
+// 로컬(localhost)이든 배포 도메인이든 항상 "지금 접속한 사이트 주소"로
+// 정확히 돌아오게 하기 위함(하드코딩된 사이트 URL env var를 두지 않음).
+async function getOrigin() {
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${host}`;
+}
 
 export async function signUp(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -65,14 +75,10 @@ export async function signIn(formData: FormData) {
   if (error) {
     const friendlyMessage =
       error.message === "Invalid login credentials"
-        ? "이메일 또는 비밀번호가 올바르지 않습니다."
+        ? "이메일 또는 비밀번호가 일치하지 않습니다. (Email or password is incorrect.)"
         : error.message;
 
-    const params = new URLSearchParams({ error: friendlyMessage });
-    if (error.message === "Invalid login credentials") {
-      params.set("detail", error.message);
-    }
-    redirect(`/login?${params.toString()}`);
+    redirect(`/login?${new URLSearchParams({ error: friendlyMessage }).toString()}`);
   }
 
   redirect("/");
@@ -83,4 +89,27 @@ export async function signOut() {
   const supabase = createClient(cookieStore);
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    redirect(`/forgot-password?error=${encodeURIComponent("이메일을 입력해주세요. (Email is required.)")}`);
+  }
+
+  const origin = await getOrigin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  // 이 프로젝트의 재설정 메일은 code 쿼리파라미터가 아니라 URL 해시
+  // (#access_token=...&type=recovery)로 세션을 돌려주므로, redirectTo는
+  // 해시를 직접 읽는 /reset-password 클라이언트 페이지를 가리킨다.
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/reset-password`,
+  });
+
+  // 이메일 존재 여부를 노출하지 않기 위해 성공/실패와 관계없이 항상 같은
+  // 안내로 리다이렉트한다.
+  redirect("/forgot-password?sent=1");
 }
