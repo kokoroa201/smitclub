@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { cookies } from "next/headers";
 import { ArrowRight, Sparkles, Users } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
@@ -49,23 +48,15 @@ export default async function Home() {
       <div className="sm:hidden">
         <section className="px-4 pt-3">
           <div className="relative min-h-[120px] max-h-[145px] overflow-hidden rounded-lg border border-border bg-white px-4 py-4">
-            {/* 이미지는 오른쪽 38%에만 존재 — 텍스트 쪽으로 절대 넘어오지
-                않는다(위치 자체로 제한, opacity로만 가리는 방식 아님). */}
-            <div className="absolute inset-y-0 right-0 w-[38%]">
-              <Image
-                src="/hero-students-5.png"
-                alt=""
-                fill
-                sizes="150px"
-                className="object-cover object-right-bottom"
-              />
-            </div>
-            {/* 이미지 위, 텍스트 아래에 깔리는 강한 흰색 그라데이션. 0~62%는
-                완전 불투명 흰색, 70%부터는 완전히 걷혀 이미지가 보인다 —
-                제목/설명 위로는 어떤 인물·색면도 지나가지 않는다. */}
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{ background: "linear-gradient(to right, #fff 0%, #fff 62%, rgba(255,255,255,0) 70%)" }}
+            {/* 데스크톱과 동일하게 이미지를 배경 레이어로 꽉 채우고, 텍스트와
+                겹치는 왼쪽 구간만 짧은 마스크 그라데이션으로 흐리게 처리한다.
+                카드가 작아 이미지 자체 opacity를 낮춰 은은한 배경처럼
+                보이게 한다(투명해서 카드 흰 배경과 자연스럽게 섞임). */}
+            <HeroArt
+              widthClassName="w-full"
+              sizes="100vw"
+              fadeMask="linear-gradient(to right, transparent 0%, black 60%)"
+              opacity={0.5}
             />
             <div className="relative z-10 w-[62%]">
               <span className="inline-flex items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
