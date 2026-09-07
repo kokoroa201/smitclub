@@ -18,12 +18,25 @@ export function ClubCard({ club }: { club: ClubCardData }) {
   // suda.png는 원본이 어둡고 채도가 낮아 Hero의 선명한 색감과 따로 노는
   // 느낌이 들어서, 이 이미지에 한해서만 밝기/대비/채도를 살짝 보정한다.
   const coverFilter = club.slug === "suda" ? "brightness(1.1) contrast(1.05) saturate(1.2)" : undefined;
+  // suda 대표 이미지는 인물/말풍선이 오른쪽으로 치우쳐 있고 왼쪽은 여백이라,
+  // 카드 비율(특히 세로가 짧은 모바일)에서 bg-cover 기본 center 위치로
+  // 자르면 인물이 가장자리에 걸린다. 인물·아이콘이 항상 프레임 안에
+  // 들어오도록 위치를 오른쪽 위주로 고정한다.
+  const coverPosition = club.slug === "suda" ? "70% 35%" : undefined;
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-white">
       <div
-        className="relative flex h-28 w-full shrink-0 items-center justify-center bg-muted bg-cover bg-center sm:h-52 lg:h-56"
-        style={club.coverImageUrl ? { backgroundImage: `url(${club.coverImageUrl})`, filter: coverFilter } : undefined}
+        className="relative flex h-28 w-full shrink-0 items-center justify-center bg-muted bg-cover sm:h-52 lg:h-56"
+        style={
+          club.coverImageUrl
+            ? {
+                backgroundImage: `url(${club.coverImageUrl})`,
+                backgroundPosition: coverPosition ?? "center",
+                filter: coverFilter,
+              }
+            : undefined
+        }
       >
         {!club.coverImageUrl && <CategoryIcon className="h-9 w-9 text-muted-foreground/30" strokeWidth={1.5} />}
         <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-foreground ring-1 ring-border sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">

@@ -6,30 +6,59 @@ import { ClubCard, type ClubCardData } from "@/components/clubs/club-card";
 import { ClubCardMini } from "@/components/clubs/club-card-mini";
 import { NextClubCard, NextClubCardMini } from "@/components/home/next-club-card";
 import { SchoolNews } from "@/components/home/school-news";
-import { HeroArt } from "@/components/home/hero-art";
 import { HomeFreshness } from "@/components/home/home-freshness";
+
+// SUDA는 모집 상태와 무관하게 홈에 카드 1개가 항상 보여야 하는 대표
+// 동아리라서, status 필터와 별개로 항상 목록에 포함시킨다(이미 recruiting
+// 상태로 조회됐다면 중복 추가하지 않는다).
+const PINNED_CLUB_SLUG = "suda";
+
+function toClubCardData(club: {
+  slug: string;
+  name: string;
+  category: string;
+  description: string | null;
+  cover_image_url: string | null;
+  meeting_day: string | null;
+  meeting_location: string | null;
+}): ClubCardData {
+  return {
+    slug: club.slug,
+    name: club.name,
+    category: club.category,
+    description: club.description,
+    coverImageUrl: club.cover_image_url,
+    meetingDay: club.meeting_day,
+    meetingLocation: club.meeting_location,
+  };
+}
 
 async function getRecruitingClubs(): Promise<ClubCardData[]> {
   try {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
-    const { data } = await supabase
-      .from("clubs")
-      .select("slug, name, category, description, cover_image_url, meeting_day, meeting_location")
-      .eq("status", "recruiting")
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const [{ data }, { data: pinned }] = await Promise.all([
+      supabase
+        .from("clubs")
+        .select("slug, name, category, description, cover_image_url, meeting_day, meeting_location")
+        .eq("status", "recruiting")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("clubs")
+        .select("slug, name, category, description, cover_image_url, meeting_day, meeting_location")
+        .eq("slug", PINNED_CLUB_SLUG)
+        .maybeSingle(),
+    ]);
 
-    return (data ?? []).map((club) => ({
-      slug: club.slug,
-      name: club.name,
-      category: club.category,
-      description: club.description,
-      coverImageUrl: club.cover_image_url,
-      meetingDay: club.meeting_day,
-      meetingLocation: club.meeting_location,
-    }));
+    const clubs = (data ?? []).map(toClubCardData);
+
+    if (pinned && !clubs.some((club) => club.slug === PINNED_CLUB_SLUG)) {
+      clubs.push(toClubCardData(pinned));
+    }
+
+    return clubs;
   } catch {
     return [];
   }
@@ -42,54 +71,43 @@ export default async function Home() {
     <div className="flex flex-col">
       <HomeFreshness />
 
-      {/* 모바일 전용 Hero — 배지+제목+설명만, 120~145px 높이. CTA는 하단
-          MAKE 버튼/동아리 탭과 중복되므로 Hero 안에 두지 않는다.
-          640px(sm) 이상에서는 아래의 데스크톱 Hero로 대체된다. */}
+      {/* 모바일 Hero — 일러스트 제거, 텍스트만 세로 중앙 배치한 짧은 배너.
+          min-h만 두고 max-h/overflow 고정은 두지 않아, 큰 글씨 모드에서
+          텍스트가 늘어나면 배너 높이도 함께 늘어나 잘리지 않는다. */}
       <div className="sm:hidden">
         <section className="px-4 pt-3">
-          <div className="relative min-h-[120px] max-h-[145px] overflow-hidden rounded-lg border border-border bg-white px-4 py-4">
-            {/* 데스크톱과 동일하게 이미지를 배경 레이어로 꽉 채우고, 텍스트와
-                겹치는 왼쪽 구간만 짧은 마스크 그라데이션으로 흐리게 처리한다.
-                카드가 작아 이미지 자체 opacity를 낮춰 은은한 배경처럼
-                보이게 한다(투명해서 카드 흰 배경과 자연스럽게 섞임). */}
-            <HeroArt
-              widthClassName="w-full"
-              sizes="100vw"
-              fadeMask="linear-gradient(to right, transparent 0%, black 60%)"
-              opacity={0.5}
-            />
-            <div className="relative z-10 w-[62%]">
-              <span className="inline-flex items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
-                2026 동아리 시즌
-              </span>
-              <h1 className="mt-2 text-xl font-bold leading-snug tracking-tight text-foreground">
-                학교생활, <span className="text-coral">함께할 때</span> 더 즐거워요
-              </h1>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
-              </p>
-            </div>
+          <div className="flex min-h-[140px] flex-col items-center justify-center gap-1.5 rounded-lg border border-border/50 bg-gradient-to-r from-coral-soft/50 to-white px-4 py-4 text-center">
+            <span className="inline-flex w-fit items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
+              2026 동아리 시즌
+            </span>
+            <h1 className="text-xl leading-snug tracking-tight">
+              <span className="font-semibold text-slate-800">학교생활,</span>{" "}
+              <span className="font-bold text-coral-dark">함께할 때</span>{" "}
+              <span className="font-semibold text-slate-800">더 즐거워요</span>
+            </h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
+            </p>
           </div>
         </section>
       </div>
 
-      {/* 태블릿/데스크톱 Hero — 하나의 장면처럼 보이는 배경 이미지. CTA 카드는
-          제거(하단/상단 내비의 MAKE·동아리 진입점과 중복되어 있었음). */}
+      {/* 태블릿/데스크톱 Hero — 마찬가지로 일러스트 없이 텍스트만 세로 중앙
+          배치한 짧은 배너. */}
       <div className="hidden sm:block">
         <section className="px-4 pt-4 sm:pt-6">
-          <div className="relative mx-auto min-h-[320px] max-w-6xl overflow-hidden rounded-lg border border-border bg-white lg:min-h-[340px]">
-            <HeroArt />
-            <div className="relative z-10 w-[44%] px-5 py-7 sm:px-7 sm:py-8 lg:w-[42%] lg:px-10 lg:py-9">
-              <span className="inline-flex items-center rounded-full bg-coral-soft px-3 py-1 text-xs font-semibold text-coral-dark">
-                2026 동아리 시즌
-              </span>
-              <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                학교생활, <span className="text-coral">함께할 때</span> 더 즐거워요
-              </h1>
-              <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-                관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
-              </p>
-            </div>
+          <div className="mx-auto flex min-h-[150px] max-w-6xl flex-col items-center justify-center gap-1.5 rounded-lg border border-border/50 bg-gradient-to-r from-coral-soft/50 to-white px-7 py-5 text-center lg:px-10">
+            <span className="inline-flex w-fit items-center rounded-full bg-coral-soft px-3 py-1 text-xs font-semibold text-coral-dark">
+              2026 동아리 시즌
+            </span>
+            <h1 className="text-2xl leading-tight tracking-tight sm:whitespace-nowrap sm:text-3xl lg:text-4xl">
+              <span className="font-semibold text-slate-800">학교생활,</span>{" "}
+              <span className="font-bold text-coral-dark">함께할 때</span>{" "}
+              <span className="font-semibold text-slate-800">더 즐거워요</span>
+            </h1>
+            <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
+              관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
+            </p>
           </div>
         </section>
       </div>

@@ -29,7 +29,7 @@ export default async function NewClubPage() {
           아래 조건을 충족하면 신청서가 관리자에게 전달됩니다.
         </p>
       </div>
-      <ApplicationForm />
+      <ApplicationForm profile={profile} />
     </main>
   );
 }

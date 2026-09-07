@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Compass, Home, Newspaper, UserRound } from "lucide-react";
+import { Bell, Compass, Home, Newspaper, UserRound } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/auth";
 import { AccessibilityControls } from "@/components/nav/accessibility-controls";
@@ -11,9 +11,15 @@ const NAV_LINKS = [
   { href: "/my", label: "MY", icon: UserRound },
 ];
 
-export function SiteHeader({ profile }: { profile: Profile | null }) {
+export function SiteHeader({
+  profile,
+  unreadNotifications = 0,
+}: {
+  profile: Profile | null;
+  unreadNotifications?: number;
+}) {
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur print:hidden">
       <div className="border-b border-border/70 bg-muted/60">
         <div className="mx-auto flex h-11 max-w-6xl items-center justify-end px-4">
           <AccessibilityControls />
@@ -48,6 +54,22 @@ export function SiteHeader({ profile }: { profile: Profile | null }) {
           <div className="flex items-center gap-3 text-sm">
             {profile ? (
               <>
+                <Link href="/notifications" aria-label="알림" className="relative rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+                  <Bell className="h-5 w-5" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-bold text-white">
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  )}
+                </Link>
+                {profile.role === "super_admin" && (
+                  <Link
+                    href="/admin"
+                    className="rounded-full border border-coral px-4 py-1.5 font-bold text-coral transition-colors hover:bg-coral-soft"
+                  >
+                    관리자
+                  </Link>
+                )}
                 <div className="hidden items-center gap-2 sm:flex">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral text-xs font-extrabold text-white">
                     {profile.name.slice(0, 1)}

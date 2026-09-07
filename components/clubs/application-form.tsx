@@ -6,27 +6,68 @@ import {
   type SubmitClubApplicationState,
 } from "@/lib/actions/club-applications";
 import { CLUB_CATEGORIES } from "@/lib/constants/categories";
-import { MIN_FOUNDERS, MIN_CURRENT_STUDENT_RATIO } from "@/lib/constants/club-application-rules";
+import {
+  MIN_FOUNDERS,
+  MIN_KOREAN_FOUNDERS,
+  MIN_INTERNATIONAL_FOUNDERS,
+  REGISTRATION_CATEGORIES,
+  APPLICATION_MONTHS,
+} from "@/lib/constants/club-application-rules";
+import type { Profile } from "@/lib/auth";
 
 const initialState: SubmitClubApplicationState = { error: null, success: false };
 
-function makeInitialRowIds() {
-  return Array.from({ length: MIN_FOUNDERS }, (_, i) => i);
+// 회장·총무는 회원 명단에 자동 포함되므로, 추가로 입력받아야 하는 "그 외"
+// 회원 행은 최소 인원(MIN_FOUNDERS)에서 회장·총무 인원을 뺀 수만큼만 둔다.
+const AUTO_INCLUDED_DIFFERENT = 2; // 회장 + 총무(다른 사람)
+const AUTO_INCLUDED_SAME = 1; // 회장 = 총무(동일인)
+const BASE_ROW_COUNT = MIN_FOUNDERS - AUTO_INCLUDED_DIFFERENT; // 기본으로 항상 보이는 추가 회원 칸(3개)
+
+function makeInitialRowIds(count: number) {
+  return Array.from({ length: count }, (_, i) => i);
 }
 
-let nextRowId = MIN_FOUNDERS;
+let nextRowId = 100;
 
-export function ApplicationForm() {
+const CONTACT_PLACEHOLDER = "숫자만 입력 (예: 01012345678)";
+
+const inputClass = "rounded-md border border-border px-3 py-2 text-sm";
+const labelClass = "flex flex-col gap-1 text-sm";
+
+export function ApplicationForm({ profile }: { profile: Profile }) {
   const [state, formAction, pending] = useActionState(submitClubApplication, initialState);
-  const [rowIds, setRowIds] = useState<number[]>(makeInitialRowIds);
+
+  const [presidentDepartment, setPresidentDepartment] = useState("");
+  const [presidentStudentId, setPresidentStudentId] = useState("");
+  const [presidentContact, setPresidentContact] = useState("");
+  const [presidentNationality, setPresidentNationality] = useState<"domestic" | "international">("domestic");
+
+  const [treasurerSameAsPresident, setTreasurerSameAsPresident] = useState(false);
+  const [treasurerNationality, setTreasurerNationality] = useState<"domestic" | "international">("domestic");
+  const [treasurerIsCurrentStudent, setTreasurerIsCurrentStudent] = useState(true);
+
+  const [rowIds, setRowIds] = useState<number[]>(() => makeInitialRowIds(BASE_ROW_COUNT));
   const [currentStudentFlags, setCurrentStudentFlags] = useState<Record<number, boolean>>(() =>
-    Object.fromEntries(makeInitialRowIds().map((id) => [id, true])),
+    Object.fromEntries(makeInitialRowIds(BASE_ROW_COUNT).map((id) => [id, true])),
   );
+  const [nationalityFlags, setNationalityFlags] = useState<Record<number, "domestic" | "international">>(() =>
+    Object.fromEntries(makeInitialRowIds(BASE_ROW_COUNT).map((id) => [id, "domestic"])),
+  );
+  // 각 추가 회원 칸에 이름이 실제로 입력됐는지 — 진행 상태 표시와, 총무=회장
+  // 토글을 되돌릴 때 "이미 입력한 칸은 지우지 않는다" 판단에 함께 쓴다.
+  const [nameFilledFlags, setNameFilledFlags] = useState<Record<number, boolean>>({});
+  // 총무=회장 토글로 자동으로 늘어난 칸의 id만 별도로 기억해뒀다가, 토글을
+  // 되돌릴 때 그 중 비어있는 칸만 되돌린다("+ 회원 추가"로 늘린 칸은 그대로 둔다).
+  const [autoAddedIds, setAutoAddedIds] = useState<number[]>([]);
+  const [hasVicePresident, setHasVicePresident] = useState(false);
+  const [hasMembershipFee, setHasMembershipFee] = useState(false);
 
   const addRow = () => {
     const id = nextRowId++;
     setRowIds((rows) => [...rows, id]);
     setCurrentStudentFlags((flags) => ({ ...flags, [id]: true }));
+    setNationalityFlags((flags) => ({ ...flags, [id]: "domestic" }));
+    setNameFilledFlags((flags) => ({ ...flags, [id]: false }));
   };
 
   const removeRow = (id: number) => {
@@ -36,39 +77,124 @@ export function ApplicationForm() {
       delete next[id];
       return next;
     });
+    setNationalityFlags((flags) => {
+      const next = { ...flags };
+      delete next[id];
+      return next;
+    });
+    setNameFilledFlags((flags) => {
+      const next = { ...flags };
+      delete next[id];
+      return next;
+    });
+    setAutoAddedIds((ids) => ids.filter((rowId) => rowId !== id));
   };
 
-  const totalCount = rowIds.length;
-  const currentStudentCount = rowIds.filter((id) => currentStudentFlags[id]).length;
-  const ratio = totalCount > 0 ? currentStudentCount / totalCount : 0;
+  // 총무를 회장과 동일로 전환하면 필요 인원이 1명 줄어드는 대신, 추가 회원
+  // 행이 최소 4개는 있어야 하므로 부족한 만큼만 자동으로 늘려준다. 다시
+  // 해제하면 그 중 아직 이름을 입력하지 않은 칸만 3칸으로 되돌리고, 이미
+  // 입력한 칸은 그대로 유지한다.
+  const handleTreasurerSameToggle = (checked: boolean) => {
+    setTreasurerSameAsPresident(checked);
+    if (checked) {
+      const needed = MIN_FOUNDERS - AUTO_INCLUDED_SAME;
+      if (rowIds.length >= needed) return;
+      const extraIds = Array.from({ length: needed - rowIds.length }, () => nextRowId++);
+      setRowIds((rows) => [...rows, ...extraIds]);
+      setCurrentStudentFlags((flags) => ({ ...flags, ...Object.fromEntries(extraIds.map((id) => [id, true])) }));
+      setNationalityFlags((flags) => ({
+        ...flags,
+        ...Object.fromEntries(extraIds.map((id) => [id, "domestic"])),
+      }));
+      setNameFilledFlags((flags) => ({ ...flags, ...Object.fromEntries(extraIds.map((id) => [id, false])) }));
+      setAutoAddedIds((ids) => [...ids, ...extraIds]);
+      return;
+    }
+
+    if (autoAddedIds.length === 0) return;
+    const idsToRemove = autoAddedIds.filter((id) => !nameFilledFlags[id]);
+    if (idsToRemove.length > 0) {
+      setRowIds((rows) => rows.filter((id) => !idsToRemove.includes(id)));
+      setCurrentStudentFlags((flags) => {
+        const next = { ...flags };
+        idsToRemove.forEach((id) => delete next[id]);
+        return next;
+      });
+      setNationalityFlags((flags) => {
+        const next = { ...flags };
+        idsToRemove.forEach((id) => delete next[id]);
+        return next;
+      });
+      setNameFilledFlags((flags) => {
+        const next = { ...flags };
+        idsToRemove.forEach((id) => delete next[id]);
+        return next;
+      });
+    }
+    setAutoAddedIds((ids) => ids.filter((id) => !idsToRemove.includes(id)));
+  };
+
+  const autoIncluded = treasurerSameAsPresident ? AUTO_INCLUDED_SAME : AUTO_INCLUDED_DIFFERENT;
+  const filledExtraCount = rowIds.filter((id) => nameFilledFlags[id]).length;
+  const totalFilledMembers = autoIncluded + filledExtraCount;
+  const extraStillNeeded = Math.max(0, MIN_FOUNDERS - totalFilledMembers);
+
+  const extraKoreanCount = rowIds.filter((id) => nameFilledFlags[id] && nationalityFlags[id] !== "international").length;
+  const extraInternationalCount = rowIds.filter((id) => nameFilledFlags[id] && nationalityFlags[id] === "international").length;
+  const presidentKorean = presidentNationality === "domestic" ? 1 : 0;
+  const presidentInternational = presidentNationality === "international" ? 1 : 0;
+  const treasurerKorean = !treasurerSameAsPresident && treasurerNationality === "domestic" ? 1 : 0;
+  const treasurerInternational = !treasurerSameAsPresident && treasurerNationality === "international" ? 1 : 0;
+  const koreanCount = presidentKorean + treasurerKorean + extraKoreanCount;
+  const internationalCount = presidentInternational + treasurerInternational + extraInternationalCount;
+
+  const meetsMemberRequirement =
+    totalFilledMembers >= MIN_FOUNDERS &&
+    koreanCount >= MIN_KOREAN_FOUNDERS &&
+    internationalCount >= MIN_INTERNATIONAL_FOUNDERS;
 
   if (state.success) {
     return (
       <div className="rounded-card border border-border bg-card p-8 text-center">
         <h2 className="text-xl font-extrabold text-foreground">신청이 접수됐습니다</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          관리자 검토 후 결과를 안내드릴게요. 검토에는 며칠 정도 소요될 수 있습니다.
+          원우회 검토 → 원우회의 학교 승인 추천 → 학교 최종 승인 순으로 처리되며, 처리 현황과
+          결과는 알림으로 안내드립니다.
         </p>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form action={formAction} className="flex flex-col gap-8">
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-foreground">기본 정보</h2>
-        <label className="flex flex-col gap-1 text-sm">
-          동아리명
-          <input name="club_name" required className="rounded-md border border-border px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          카테고리
-          <select
-            name="category"
-            required
-            defaultValue=""
-            className="rounded-md border border-border px-3 py-2"
-          >
+        <h2 className="text-lg font-bold text-foreground">1. 동아리 기본사항 (Club Information)</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className={labelClass}>
+            동아리명 국문 (Club Name, Korean)
+            <input name="club_name" required className={inputClass} />
+          </label>
+          <label className={labelClass}>
+            동아리명 영문 (Club Name, English) — 선택
+            <input name="club_name_en" className={inputClass} />
+          </label>
+        </div>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm">동아리 구분 (Category, 운영규정 제4조)</legend>
+          <div className="flex flex-wrap gap-3 text-sm">
+            {REGISTRATION_CATEGORIES.map((cat) => (
+              <label key={cat} className="flex items-center gap-1.5">
+                <input type="radio" name="registration_category" value={cat} required />
+                {cat}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <label className={labelClass}>
+          사이트 표시 카테고리 (동아리 목록/검색용)
+          <select name="category" required defaultValue="" className={inputClass}>
             <option value="" disabled>
               선택해주세요
             </option>
@@ -79,43 +205,232 @@ export function ApplicationForm() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          목적/소개
-          <textarea
-            name="purpose"
-            required
-            rows={3}
-            className="rounded-md border border-border px-3 py-2"
-          />
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm">사용 언어 (Language)</legend>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="language" value="ko" required />
+              한국어 Korean
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="language" value="en" />
+              영어 English
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="language" value="mixed" />
+              혼합 Mixed
+            </label>
+          </div>
+        </fieldset>
+
+        <label className={labelClass}>
+          설립일 (Date of Establishment)
+          <input type="date" name="established_at" required className={`${inputClass} w-full`} />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          정기 활동 계획
-          <textarea
-            name="activity_plan"
-            required
-            rows={3}
-            className="rounded-md border border-border px-3 py-2"
-          />
+
+        <label className={labelClass}>
+          설립 목적 (Purpose of Club)
+          <textarea name="purpose" required rows={3} className={inputClass} />
         </label>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm">
-            요일
-            <input name="meeting_day" className="rounded-md border border-border px-3 py-2" />
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-bold text-foreground">2. 임원현황 (Executive Members)</h2>
+
+        <div className="rounded-md border border-border p-3">
+          <p className="text-sm font-semibold text-foreground">회장 President — {profile.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            회장은 신청자 본인으로 자동 등록되며, 회원 명단에도 자동으로 포함됩니다.
+          </p>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <label className={labelClass}>
+              학과 Department
+              <input
+                name="president_department"
+                value={presidentDepartment}
+                onChange={(e) => setPresidentDepartment(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className={labelClass}>
+              학번 Student ID
+              <input
+                name="president_student_id"
+                value={presidentStudentId}
+                onChange={(e) => setPresidentStudentId(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className={labelClass}>
+              연락처 Contact
+              <input
+                name="president_contact"
+                required
+                placeholder={CONTACT_PLACEHOLDER}
+                value={presidentContact}
+                onChange={(e) => setPresidentContact(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+          <fieldset className="mt-3 flex items-center gap-4 text-sm">
+            <legend className="sr-only">회장 국적</legend>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="radio"
+                name="president_nationality"
+                value="domestic"
+                checked={presidentNationality === "domestic"}
+                onChange={() => setPresidentNationality("domestic")}
+              />
+              한국인
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="radio"
+                name="president_nationality"
+                value="international"
+                checked={presidentNationality === "international"}
+                onChange={() => setPresidentNationality("international")}
+              />
+              외국인
+            </label>
+          </fieldset>
+        </div>
+
+        <div className="rounded-md border border-border p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">총무 Treasurer (필수)</p>
+          </div>
+          <label className="mt-1 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={treasurerSameAsPresident}
+              onChange={(e) => handleTreasurerSameToggle(e.target.checked)}
+            />
+            총무는 회장과 동일
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            시간
-            <input name="meeting_time" className="rounded-md border border-border px-3 py-2" />
+
+          {treasurerSameAsPresident ? (
+            <>
+              <p className="mt-2 text-xs text-muted-foreground">
+                회장({profile.name}) 정보가 총무 정보로 자동 반영됩니다. 회원 명단에는 한 명으로만
+                집계됩니다.
+              </p>
+              <input type="hidden" name="treasurer_name" value={profile.name} />
+              <input type="hidden" name="treasurer_department" value={presidentDepartment} />
+              <input type="hidden" name="treasurer_student_id" value={presidentStudentId} />
+              <input type="hidden" name="treasurer_contact" value={presidentContact} />
+              <input type="hidden" name="treasurer_nationality" value={presidentNationality} />
+              <input type="hidden" name="treasurer_is_current_student" value="on" />
+              <input type="hidden" name="treasurer_same_as_president" value="on" />
+            </>
+          ) : (
+            <>
+              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className={labelClass}>
+                  성명 국문 Name (Korean)
+                  <input name="treasurer_name" required className={inputClass} />
+                </label>
+                <label className={labelClass}>
+                  성명 영문 Name (English) — 선택
+                  <input name="treasurer_name_en" className={inputClass} />
+                </label>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <label className={labelClass}>
+                  학과 Department
+                  <input name="treasurer_department" className={inputClass} />
+                </label>
+                <label className={labelClass}>
+                  학번 Student ID
+                  <input name="treasurer_student_id" className={inputClass} />
+                </label>
+                <label className={labelClass}>
+                  연락처 Contact
+                  <input name="treasurer_contact" required placeholder={CONTACT_PLACEHOLDER} className={inputClass} />
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    name="treasurer_is_current_student"
+                    checked={treasurerIsCurrentStudent}
+                    onChange={(e) => setTreasurerIsCurrentStudent(e.target.checked)}
+                  />
+                  재학생
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="treasurer_nationality"
+                    value="domestic"
+                    checked={treasurerNationality === "domestic"}
+                    onChange={() => setTreasurerNationality("domestic")}
+                  />
+                  한국인
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="treasurer_nationality"
+                    value="international"
+                    checked={treasurerNationality === "international"}
+                    onChange={() => setTreasurerNationality("international")}
+                  />
+                  외국인
+                </label>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="rounded-md border border-border p-3">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <input
+              type="checkbox"
+              name="has_vice_president"
+              checked={hasVicePresident}
+              onChange={(e) => setHasVicePresident(e.target.checked)}
+            />
+            부회장 Vice President (선택)
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            장소
-            <input name="meeting_location" className="rounded-md border border-border px-3 py-2" />
-          </label>
+          {hasVicePresident && (
+            <>
+              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className={labelClass}>
+                  성명 국문 Name (Korean)
+                  <input name="vice_president_name" required={hasVicePresident} className={inputClass} />
+                </label>
+                <label className={labelClass}>
+                  성명 영문 Name (English) — 선택
+                  <input name="vice_president_name_en" className={inputClass} />
+                </label>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <label className={labelClass}>
+                  학과 Department
+                  <input name="vice_president_department" className={inputClass} />
+                </label>
+                <label className={labelClass}>
+                  학번 Student ID
+                  <input name="vice_president_student_id" className={inputClass} />
+                </label>
+                <label className={labelClass}>
+                  연락처 Contact
+                  <input name="vice_president_contact" placeholder={CONTACT_PLACEHOLDER} className={inputClass} />
+                </label>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">창립회원 명단</h2>
+          <h2 className="text-lg font-bold text-foreground">3. 추가 회원 명단 (Additional Members)</h2>
           <button
             type="button"
             onClick={addRow}
@@ -124,26 +439,36 @@ export function ApplicationForm() {
             + 회원 추가
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          최소 {MIN_FOUNDERS}명, 재학생 비율 {Math.round(MIN_CURRENT_STUDENT_RATIO * 100)}% 이상
-          필요 — 현재 {totalCount}명, 재학생 {Math.round(ratio * 100)}%
+        <p className={`text-xs ${extraStillNeeded === 0 ? "text-muted-foreground" : "font-semibold text-coral-dark"}`}>
+          {extraStillNeeded > 0
+            ? `회장·총무 ${autoIncluded}명 + 추가 회원 ${extraStillNeeded}명 입력 필요`
+            : `회장·총무 포함 총 ${totalFilledMembers}명 입력 완료`}
+        </p>
+        <p className={`text-xs ${meetsMemberRequirement ? "text-muted-foreground" : "font-semibold text-coral-dark"}`}>
+          한국인 {MIN_KOREAN_FOUNDERS}명 이상·외국인 {MIN_INTERNATIONAL_FOUNDERS}명 이상 포함 필요 (운영규정 제13조) —
+          현재 한국인 {koreanCount}명 · 외국인 {internationalCount}명
         </p>
 
-        {rowIds.map((id, index) => (
-          <div
-            key={id}
-            className="grid grid-cols-1 gap-2 rounded-md border border-border p-3 sm:grid-cols-[2fr_1.5fr_1fr_1.5fr_auto] sm:items-center"
-          >
+        {rowIds.map((id) => (
+          <div key={id} className="flex flex-col gap-2 rounded-md border border-border p-3 sm:flex-row sm:flex-wrap sm:items-center">
             <input
               name={`founders[${id}][name]`}
-              placeholder="이름"
+              placeholder="이름 Name"
               required
-              className="rounded-md border border-border px-3 py-2 text-sm"
+              onChange={(e) =>
+                setNameFilledFlags((flags) => ({ ...flags, [id]: e.target.value.trim().length > 0 }))
+              }
+              className={`${inputClass} sm:flex-1 sm:min-w-[120px]`}
             />
             <input
               name={`founders[${id}][student_id]`}
-              placeholder="학번"
-              className="rounded-md border border-border px-3 py-2 text-sm"
+              placeholder="학번 Student ID"
+              className={`${inputClass} sm:flex-1 sm:min-w-[110px]`}
+            />
+            <input
+              name={`founders[${id}][contact]`}
+              placeholder={CONTACT_PLACEHOLDER}
+              className={`${inputClass} sm:flex-1 sm:min-w-[120px]`}
             />
             <label className="flex items-center gap-1.5 text-sm">
               <input
@@ -156,12 +481,29 @@ export function ApplicationForm() {
               />
               재학생
             </label>
-            <input
-              name={`founders[${id}][contact]`}
-              placeholder="연락처"
-              className="rounded-md border border-border px-3 py-2 text-sm"
-            />
-            {index >= MIN_FOUNDERS && (
+            <div className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name={`founders[${id}][nationality]`}
+                  value="domestic"
+                  checked={(nationalityFlags[id] ?? "domestic") === "domestic"}
+                  onChange={() => setNationalityFlags((flags) => ({ ...flags, [id]: "domestic" }))}
+                />
+                한국인
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name={`founders[${id}][nationality]`}
+                  value="international"
+                  checked={nationalityFlags[id] === "international"}
+                  onChange={() => setNationalityFlags((flags) => ({ ...flags, [id]: "international" }))}
+                />
+                외국인
+              </label>
+            </div>
+            {id >= BASE_ROW_COUNT && (
               <button
                 type="button"
                 onClick={() => removeRow(id)}
@@ -174,9 +516,85 @@ export function ApplicationForm() {
         ))}
       </section>
 
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-bold text-foreground">4. 활동 계획 (Activity Plan)</h2>
+        <label className={labelClass}>
+          주요 활동 목표 (Main Goals)
+          <textarea name="activity_plan" required rows={3} className={inputClass} />
+        </label>
+
+        <div>
+          <p className="mb-2 text-sm">월별 활동 계획 (Monthly Activity Schedule) — 활동이 없는 달은 비워두세요</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {APPLICATION_MONTHS.map((month) => (
+              <label key={month} className="flex items-center gap-2 text-sm">
+                <span className="w-10 shrink-0 text-muted-foreground">{month}월</span>
+                <input name={`monthly_activity[${month}]`} className={`${inputClass} flex-1`} />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <label className={labelClass}>
+            요일
+            <input name="meeting_day" className={inputClass} />
+          </label>
+          <label className={labelClass}>
+            시간
+            <input name="meeting_time" className={inputClass} />
+          </label>
+          <label className={labelClass}>
+            장소
+            <input name="meeting_location" className={inputClass} />
+          </label>
+        </div>
+        <label className={labelClass}>
+          정기 모임 빈도 (회칙 제15조 — 예: 월 2회)
+          <input name="meeting_frequency" required className={inputClass} />
+        </label>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-bold text-foreground">5. 회칙 관련 사항 (Constitution)</h2>
+        <label className={labelClass}>
+          회원 가입 승인 처리 기한 (회칙 제5조, 일 단위)
+          <input type="number" name="membership_approval_days" min={1} required className={inputClass} />
+        </label>
+        <div className="rounded-md border border-border p-3">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <input
+              type="checkbox"
+              name="has_membership_fee"
+              checked={hasMembershipFee}
+              onChange={(e) => setHasMembershipFee(e.target.checked)}
+            />
+            회비 있음 (회칙 제17조)
+          </label>
+          {hasMembershipFee && (
+            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className={labelClass}>
+                금액 (원)
+                <input type="number" name="membership_fee_amount" min={1} required={hasMembershipFee} className={inputClass} />
+              </label>
+              <label className={labelClass}>
+                납부 주기
+                <input name="membership_fee_cycle" placeholder="예: 학기별" required={hasMembershipFee} className={inputClass} />
+              </label>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+        지도교수 확인(서식5)은 원우회 1차 검토 통과 후 별도 단계에서 진행됩니다. 지금은 입력하지
+        않아도 됩니다.
+      </p>
+
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="agree_rules" required className="mt-1" />
-        학교 및 관련 법규를 준수하며, 정치/종교/상업적 목적으로 활동하지 않을 것에 동의합니다.
+        본인은 서울미디어대학원대학교 동아리 등록 절차 진행 및 운영 관리를 위하여 위 내용을
+        사실에 따라 작성하였으며, 관련 규정을 준수할 것을 확인합니다.
       </label>
 
       {state.error && (

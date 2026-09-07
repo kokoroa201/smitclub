@@ -1,7 +1,16 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
-export type Role = "student" | "club_admin" | "super_admin";
+export type Role =
+  | "student"
+  | "club_admin"
+  | "super_admin"
+  | "council_president"
+  | "council_vice_president"
+  | "academic_staff";
+
+export const REVIEWER_ROLES: Role[] = ["council_president", "council_vice_president", "academic_staff"];
 
 export type Profile = {
   id: string;
@@ -28,4 +37,12 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     .single();
 
   return (profile as Profile | null) ?? null;
+}
+
+export async function requireSuperAdmin(): Promise<Profile> {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "super_admin") {
+    redirect("/");
+  }
+  return profile;
 }

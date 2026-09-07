@@ -59,6 +59,18 @@
   --font-sans: var(--font-pretendard);
 }
 
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  .certificate-print-page {
+    border-color: #000 !important;
+    box-shadow: none !important;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #17131d;
