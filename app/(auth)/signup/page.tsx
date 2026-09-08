@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { signUp } from "@/lib/actions/auth";
+import { DEPARTMENT_GROUPS } from "@/lib/constants/departments";
 
 export default async function SignupPage(props: PageProps<"/signup">) {
   const params = await props.searchParams;
   const error = typeof params.error === "string" ? params.error : null;
   const name = typeof params.name === "string" ? params.name : "";
   const studentId = typeof params.student_id === "string" ? params.student_id : "";
-  const affiliation = typeof params.affiliation === "string" ? params.affiliation : "";
+  const department = typeof params.department === "string" ? params.department : "";
+  const contact = typeof params.contact === "string" ? params.contact : "";
   const email = typeof params.email === "string" ? params.email : "";
 
   return (
@@ -14,7 +16,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
       <div>
         <h1 className="text-2xl font-bold">회원가입</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          이름, 학번, 소속만 알려주시면 바로 시작할 수 있어요.
+          이름, 학번, 학과, 연락처만 알려주시면 바로 시작할 수 있어요.
         </p>
       </div>
 
@@ -39,12 +41,31 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          소속
+          학과·전공 Department / Program
+          <select
+            name="department"
+            defaultValue={department}
+            className="rounded-md border border-neutral-300 px-3 py-2"
+          >
+            <option value="">선택 안 함</option>
+            {DEPARTMENT_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          연락처 Contact
           <input
             type="text"
-            name="affiliation"
-            placeholder="예: 글로벌미디어학과"
-            defaultValue={affiliation}
+            name="contact"
+            placeholder="숫자만 입력 (예: 01012345678)"
+            defaultValue={contact}
             className="rounded-md border border-neutral-300 px-3 py-2"
           />
         </label>

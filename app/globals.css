@@ -26,6 +26,10 @@
   --brand-purple-dark: #7c4de0;
   --brand-purple-soft: #efe4ff;
 
+  --brand-mint: #35c2a4;
+  --brand-mint-dark: #1f9c83;
+  --brand-mint-soft: #d9f5ee;
+
   --card-radius: 1.5rem;
 }
 
@@ -53,6 +57,10 @@
   --color-purple: var(--brand-purple);
   --color-purple-dark: var(--brand-purple-dark);
   --color-purple-soft: var(--brand-purple-soft);
+
+  --color-mint: var(--brand-mint);
+  --color-mint-dark: var(--brand-mint-dark);
+  --color-mint-soft: var(--brand-mint-soft);
 
   --radius-card: var(--card-radius);
 

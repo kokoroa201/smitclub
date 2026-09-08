@@ -3,6 +3,16 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
+
+function isValidDepartment(value: string): boolean {
+  return value === "" || (ALL_DEPARTMENTS as readonly string[]).includes(value);
+}
+
+// 연락처는 "-" 등 구분자를 입력해도 저장 시 숫자만 남긴다.
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, "");
+}
 
 // 현재 요청이 도착한 호스트를 그대로 재설정 링크의 origin으로 쓴다 —
 // 로컬(localhost)이든 배포 도메인이든 항상 "지금 접속한 사이트 주소"로
@@ -20,7 +30,8 @@ export async function signUp(formData: FormData) {
   const passwordConfirm = String(formData.get("password_confirm") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const studentId = String(formData.get("student_id") ?? "").trim();
-  const affiliation = String(formData.get("affiliation") ?? "").trim();
+  const department = String(formData.get("department") ?? "").trim();
+  const contact = digitsOnly(String(formData.get("contact") ?? "").trim());
 
   if (!email || !password || !name) {
     redirect(`/signup?error=${encodeURIComponent("이메일, 비밀번호, 이름은 필수입니다.")}`);
@@ -30,12 +41,17 @@ export async function signUp(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent("비밀번호는 6자 이상이어야 합니다.")}`);
   }
 
+  if (!isValidDepartment(department)) {
+    redirect(`/signup?error=${encodeURIComponent("학과·전공은 제공된 목록에서 선택해주세요.")}`);
+  }
+
   if (password !== passwordConfirm) {
     const params = new URLSearchParams({
       error: "비밀번호가 일치하지 않습니다.",
       name,
       student_id: studentId,
-      affiliation,
+      department,
+      contact,
       email,
     });
     redirect(`/signup?${params.toString()}`);
@@ -51,7 +67,8 @@ export async function signUp(formData: FormData) {
       data: {
         name,
         student_id: studentId || null,
-        affiliation: affiliation || null,
+        department: department || null,
+        contact: contact || null,
       },
     },
   });
