@@ -65,25 +65,31 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
-      {/* 비주얼 배너 — 잘리지 않게 object-contain으로 일러스트 전체를 보여주고,
-          flex로 텍스트 칸과 분리해 어떤 화면 너비에서도 겹치지 않게 한다. */}
-      <section className="flex items-center gap-3 overflow-hidden rounded-lg bg-gradient-to-br from-coral-soft via-coral-soft/80 to-purple-soft px-4 py-5 sm:gap-6 sm:px-8 sm:py-7">
-        <div className="min-w-0 flex-1">
+      {/* 비주얼 배너 — clubs-banner.png는 왼쪽에 텍스트를 위한 여백이 이미
+          구도상 비어있는 사진이라, 그 여백을 그대로 살려 배경 전체에 깔고
+          텍스트를 그 위에 얹는다. 사진 자체의 여백만으로 부족한 경우를
+          대비해 왼쪽에서 옅어지는 흰색 그라데이션을 한 겹 더해 어떤
+          크롭에서도 텍스트가 항상 읽히게 한다. */}
+      <section className="relative overflow-hidden rounded-lg">
+        <div className="absolute inset-0">
+          <Image
+            src="/clubs-banner.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: "center 58%" }}
+            priority
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-transparent sm:from-white/90 sm:via-white/30 sm:to-transparent" />
+        <div className="relative z-10 max-w-[62%] px-4 py-8 sm:max-w-[46%] sm:px-8 sm:py-14">
           <h1 className="text-lg font-extrabold leading-snug text-[#16234a] sm:text-2xl lg:text-3xl">
             나와 맞는 동아리를 찾아보세요
           </h1>
           <p className="mt-1.5 text-xs leading-relaxed text-[#2f3b5c] sm:mt-2 sm:text-base">
             관심사와 활동 목표에 맞는 동아리를 둘러보고, 마음에 드는 곳에 바로 가입 신청해보세요.
           </p>
-        </div>
-        <div className="relative aspect-[4/3] h-20 shrink-0 sm:h-32 lg:h-36">
-          <Image
-            src="/next-club.png"
-            alt="동아리 개설 일러스트"
-            fill
-            sizes="(min-width: 1024px) 192px, (min-width: 640px) 170px, 106px"
-            className="object-contain"
-          />
         </div>
       </section>
 
