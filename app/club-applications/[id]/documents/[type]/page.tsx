@@ -59,6 +59,7 @@ type Founder = {
   name: string;
   student_id: string | null;
   contact: string | null;
+  department: string | null;
 };
 
 export default async function ApplicationDocumentPage(
@@ -103,7 +104,7 @@ export default async function ApplicationDocumentPage(
 
   const { data: foundersData } = await supabase
     .from("club_application_founders")
-    .select("id, name, student_id, contact")
+    .select("id, name, student_id, contact, department")
     .eq("application_id", id)
     .returns<Founder[]>();
   const founders = foundersData ?? [];
@@ -274,6 +275,7 @@ function MembersDoc({
           <tr className="border-b border-foreground/40 text-left">
             <th className="w-10 py-2 text-xs font-bold text-muted-foreground">No.</th>
             <th className="py-2 text-xs font-bold text-muted-foreground">성명 Name</th>
+            <th className="py-2 text-xs font-bold text-muted-foreground">학과·전공 Department</th>
             <th className="py-2 text-xs font-bold text-muted-foreground">학번 Student ID</th>
             <th className="py-2 text-xs font-bold text-muted-foreground">연락처 Contact</th>
           </tr>
@@ -283,6 +285,7 @@ function MembersDoc({
             <tr key={f.id} className="border-b border-border">
               <td className="py-1.5 text-foreground">{i + 1}</td>
               <td className="py-1.5 text-foreground">{f.name}</td>
+              <td className="py-1.5 text-foreground">{f.department ?? "-"}</td>
               <td className="py-1.5 text-foreground">{f.student_id ?? "-"}</td>
               <td className="py-1.5 text-foreground">{f.contact ?? "-"}</td>
             </tr>

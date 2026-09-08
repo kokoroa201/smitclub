@@ -10,6 +10,13 @@ import {
   REGISTRATION_CATEGORIES,
   APPLICATION_MONTHS,
 } from "@/lib/constants/club-application-rules";
+import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
+
+// 학과·전공은 이제 폼에서 자유 입력이 아니라 고정 목록에서 고르므로, 값이 있다면
+// 목록에 있는 값이어야 한다(비어있는 건 선택 안 함으로 허용).
+function isValidDepartment(value: string): boolean {
+  return value === "" || (ALL_DEPARTMENTS as readonly string[]).includes(value);
+}
 
 export type SubmitClubApplicationState = {
   error: string | null;
@@ -22,6 +29,7 @@ type FounderInput = {
   isCurrentStudent: boolean;
   nationality: "domestic" | "international";
   contact: string;
+  department: string;
 };
 
 function parseFounders(formData: FormData): FounderInput[] {
@@ -42,6 +50,7 @@ function parseFounders(formData: FormData): FounderInput[] {
       entry.nationality = formData.get(key) === "international" ? "international" : "domestic";
     }
     if (field === "contact") entry.contact = digitsOnly(String(formData.get(key) ?? "").trim());
+    if (field === "department") entry.department = String(formData.get(key) ?? "").trim();
 
     founders.set(index, entry);
   }
@@ -54,6 +63,7 @@ function parseFounders(formData: FormData): FounderInput[] {
       isCurrentStudent: f.isCurrentStudent ?? false,
       nationality: f.nationality ?? "domestic",
       contact: f.contact ?? "",
+      department: f.department ?? "",
     }))
     .filter((f) => f.name.length > 0);
 }
@@ -163,6 +173,15 @@ export async function submitClubApplication(
     return { error: "부회장을 두는 경우 성명을 입력해주세요.", success: false };
   }
 
+  if (
+    !isValidDepartment(presidentDepartment) ||
+    !isValidDepartment(treasurerDepartment) ||
+    !isValidDepartment(vicePresidentDepartment) ||
+    founders.some((f) => !isValidDepartment(f.department))
+  ) {
+    return { error: "학과·전공은 제공된 목록에서 선택해주세요.", success: false };
+  }
+
   const membershipApprovalDays = Number(membershipApprovalDaysRaw);
   if (!membershipApprovalDaysRaw || !Number.isInteger(membershipApprovalDays) || membershipApprovalDays <= 0) {
     return { error: "회원 가입 승인 처리 기한(일)을 입력해주세요.", success: false };
@@ -193,6 +212,7 @@ export async function submitClubApplication(
     isCurrentStudent: true,
     nationality: presidentNationality,
     contact: presidentContact,
+    department: presidentDepartment,
   };
 
   const treasurerFounder: FounderInput | null = treasurerSameAsPresident
@@ -203,6 +223,7 @@ export async function submitClubApplication(
         isCurrentStudent: treasurerIsCurrentStudent,
         nationality: treasurerNationality,
         contact: treasurerContact,
+        department: treasurerDepartment,
       };
 
   const allFounders = [presidentFounder, ...(treasurerFounder ? [treasurerFounder] : []), ...founders];
@@ -264,12 +285,17 @@ export async function submitClubApplication(
       membership_fee_cycle: hasMembershipFee ? membershipFeeCycle : null,
       agree_rules: agreeRules,
       status: "submitted",
-      validation_passed: true,
+      // validation_passed는 원우회 검토(자격요건 확인) 단계에서 admin만 설정할
+      // 수 있는 필드다(club_applications_admin_fields_guard 트리거,
+      // supabase/migrations/0001_init_schema.sql). 신청자 세션으로 true를
+      // 직접 넣으면 트리거가 매번 insert 자체를 거부해 모든 신청이
+      // 실패했었다 — 컬럼 기본값(false)에 맡기고 이 필드는 건드리지 않는다.
     })
     .select("id")
     .single();
 
   if (insertError || !application) {
+    console.error("club_applications insert failed", insertError);
     return { error: "신청서 저장 중 오류가 발생했습니다. 다시 시도해주세요.", success: false };
   }
 
@@ -281,10 +307,12 @@ export async function submitClubApplication(
       is_current_student: f.isCurrentStudent,
       nationality: f.nationality,
       contact: f.contact || null,
+      department: f.department || null,
     })),
   );
 
   if (foundersError) {
+    console.error("club_application_founders insert failed", foundersError);
     return {
       error: "회원 명단 저장 중 오류가 발생했습니다. 다시 시도해주세요.",
       success: false,

@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   submitClubApplication,
   type SubmitClubApplicationState,
 } from "@/lib/actions/club-applications";
 import { CLUB_CATEGORIES } from "@/lib/constants/categories";
+import { DEPARTMENT_GROUPS } from "@/lib/constants/departments";
 import {
   MIN_FOUNDERS,
   MIN_KOREAN_FOUNDERS,
@@ -34,8 +35,81 @@ const CONTACT_PLACEHOLDER = "숫자만 입력 (예: 01012345678)";
 const inputClass = "rounded-md border border-border px-3 py-2 text-sm";
 const labelClass = "flex flex-col gap-1 text-sm";
 
+// 회장·총무·부회장·추가 회원 모두 학과·전공을 자유 입력이 아니라 동일한
+// 목록(lib/constants/departments.ts, 국문/영문 과정)에서 고르게 하는 공용 선택창.
+function DepartmentSelect({
+  name,
+  value,
+  onChange,
+  required,
+  className,
+}: {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  className?: string;
+}) {
+  return (
+    <select
+      name={name}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      required={required}
+      className={className}
+    >
+      <option value="" disabled>
+        선택해주세요
+      </option>
+      {DEPARTMENT_GROUPS.map((group) => (
+        <optgroup key={group.label} label={group.label}>
+          {group.options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
 export function ApplicationForm({ profile }: { profile: Profile }) {
   const [state, formAction, pending] = useActionState(submitClubApplication, initialState);
+
+  // React는 form action이 끝나면 성공/실패와 무관하게 제어되지 않은(uncontrolled)
+  // 입력칸을 전부 비운다. 저장 실패 시에도 작성 내용을 유지하기 위해, 제출
+  // 직전 폼 값을 스냅샷으로 저장해뒀다가 실패 응답을 받으면 DOM에 그대로
+  // 복원한다(상태로 관리되는 필드는 애초에 영향받지 않으므로 함께 복원해도 무해하다).
+  const formRef = useRef<HTMLFormElement>(null);
+  const lastSubmissionRef = useRef<FormData | null>(null);
+
+  useEffect(() => {
+    if (!state.error) return;
+    const snapshot = lastSubmissionRef.current;
+    const form = formRef.current;
+    if (!snapshot || !form) return;
+
+    for (const element of Array.from(form.elements)) {
+      if (
+        !(element instanceof HTMLInputElement) &&
+        !(element instanceof HTMLTextAreaElement) &&
+        !(element instanceof HTMLSelectElement)
+      ) {
+        continue;
+      }
+      const name = element.name;
+      if (!name) continue;
+
+      if (element instanceof HTMLInputElement && (element.type === "checkbox" || element.type === "radio")) {
+        const values = snapshot.getAll(name).map(String);
+        element.checked = values.includes(element.value);
+      } else {
+        const value = snapshot.get(name);
+        if (value != null) element.value = String(value);
+      }
+    }
+  }, [state]);
 
   const [presidentDepartment, setPresidentDepartment] = useState("");
   const [presidentStudentId, setPresidentStudentId] = useState("");
@@ -43,8 +117,11 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
   const [presidentNationality, setPresidentNationality] = useState<"domestic" | "international">("domestic");
 
   const [treasurerSameAsPresident, setTreasurerSameAsPresident] = useState(false);
+  const [treasurerDepartment, setTreasurerDepartment] = useState("");
   const [treasurerNationality, setTreasurerNationality] = useState<"domestic" | "international">("domestic");
   const [treasurerIsCurrentStudent, setTreasurerIsCurrentStudent] = useState(true);
+
+  const [vicePresidentDepartment, setVicePresidentDepartment] = useState("");
 
   const [rowIds, setRowIds] = useState<number[]>(() => makeInitialRowIds(BASE_ROW_COUNT));
   const [currentStudentFlags, setCurrentStudentFlags] = useState<Record<number, boolean>>(() =>
@@ -52,6 +129,9 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
   );
   const [nationalityFlags, setNationalityFlags] = useState<Record<number, "domestic" | "international">>(() =>
     Object.fromEntries(makeInitialRowIds(BASE_ROW_COUNT).map((id) => [id, "domestic"])),
+  );
+  const [departmentFlags, setDepartmentFlags] = useState<Record<number, string>>(() =>
+    Object.fromEntries(makeInitialRowIds(BASE_ROW_COUNT).map((id) => [id, ""])),
   );
   // 각 추가 회원 칸에 이름이 실제로 입력됐는지 — 진행 상태 표시와, 총무=회장
   // 토글을 되돌릴 때 "이미 입력한 칸은 지우지 않는다" 판단에 함께 쓴다.
@@ -67,6 +147,7 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
     setRowIds((rows) => [...rows, id]);
     setCurrentStudentFlags((flags) => ({ ...flags, [id]: true }));
     setNationalityFlags((flags) => ({ ...flags, [id]: "domestic" }));
+    setDepartmentFlags((flags) => ({ ...flags, [id]: "" }));
     setNameFilledFlags((flags) => ({ ...flags, [id]: false }));
   };
 
@@ -78,6 +159,11 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
       return next;
     });
     setNationalityFlags((flags) => {
+      const next = { ...flags };
+      delete next[id];
+      return next;
+    });
+    setDepartmentFlags((flags) => {
       const next = { ...flags };
       delete next[id];
       return next;
@@ -106,6 +192,7 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
         ...flags,
         ...Object.fromEntries(extraIds.map((id) => [id, "domestic"])),
       }));
+      setDepartmentFlags((flags) => ({ ...flags, ...Object.fromEntries(extraIds.map((id) => [id, ""])) }));
       setNameFilledFlags((flags) => ({ ...flags, ...Object.fromEntries(extraIds.map((id) => [id, false])) }));
       setAutoAddedIds((ids) => [...ids, ...extraIds]);
       return;
@@ -121,6 +208,11 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
         return next;
       });
       setNationalityFlags((flags) => {
+        const next = { ...flags };
+        idsToRemove.forEach((id) => delete next[id]);
+        return next;
+      });
+      setDepartmentFlags((flags) => {
         const next = { ...flags };
         idsToRemove.forEach((id) => delete next[id]);
         return next;
@@ -166,7 +258,14 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-8">
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={(e) => {
+        lastSubmissionRef.current = new FormData(e.currentTarget);
+      }}
+      className="flex flex-col gap-8"
+    >
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-bold text-foreground">1. 동아리 기본사항 (Club Information)</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -245,11 +344,11 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
           </p>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className={labelClass}>
-              학과 Department
-              <input
+              학과·전공 Department / Program
+              <DepartmentSelect
                 name="president_department"
                 value={presidentDepartment}
-                onChange={(e) => setPresidentDepartment(e.target.value)}
+                onChange={setPresidentDepartment}
                 className={inputClass}
               />
             </label>
@@ -340,8 +439,13 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
               </div>
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <label className={labelClass}>
-                  학과 Department
-                  <input name="treasurer_department" className={inputClass} />
+                  학과·전공 Department / Program
+                  <DepartmentSelect
+                    name="treasurer_department"
+                    value={treasurerDepartment}
+                    onChange={setTreasurerDepartment}
+                    className={inputClass}
+                  />
                 </label>
                 <label className={labelClass}>
                   학번 Student ID
@@ -411,8 +515,13 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
               </div>
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <label className={labelClass}>
-                  학과 Department
-                  <input name="vice_president_department" className={inputClass} />
+                  학과·전공 Department / Program
+                  <DepartmentSelect
+                    name="vice_president_department"
+                    value={vicePresidentDepartment}
+                    onChange={setVicePresidentDepartment}
+                    className={inputClass}
+                  />
                 </label>
                 <label className={labelClass}>
                   학번 Student ID
@@ -469,6 +578,12 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
               name={`founders[${id}][contact]`}
               placeholder={CONTACT_PLACEHOLDER}
               className={`${inputClass} sm:flex-1 sm:min-w-[120px]`}
+            />
+            <DepartmentSelect
+              name={`founders[${id}][department]`}
+              value={departmentFlags[id] ?? ""}
+              onChange={(value) => setDepartmentFlags((flags) => ({ ...flags, [id]: value }))}
+              className={`${inputClass} sm:flex-1 sm:min-w-[160px]`}
             />
             <label className="flex items-center gap-1.5 text-sm">
               <input
