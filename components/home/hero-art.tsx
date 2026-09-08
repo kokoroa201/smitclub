@@ -22,6 +22,9 @@ export function HeroArt({
   // 있어 그라데이션 폭이 넓으면 그 친구까지 옅어져서 짧게 잡는다.
   fadeMask = "linear-gradient(to right, transparent 0%, black 18%)",
   opacity = 1,
+  // hero-students-5.png 전용으로 고정돼 있던 크롭 기준점을 다른 이미지에도
+  // 재사용할 수 있도록 분리한 값 — 기본값은 기존 동작과 동일하게 유지한다.
+  objectPosition = "right top",
 }: {
   src?: string;
   alt?: string;
@@ -29,6 +32,7 @@ export function HeroArt({
   sizes?: string;
   fadeMask?: string;
   opacity?: number;
+  objectPosition?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -45,7 +49,8 @@ export function HeroArt({
         fill
         preload
         sizes={sizes}
-        className="object-cover object-right-top"
+        className="object-cover"
+        style={{ objectPosition }}
         onError={() => setFailed(true)}
       />
     </div>
