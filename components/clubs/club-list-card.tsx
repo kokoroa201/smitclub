@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { CalendarDays, Sparkles } from "lucide-react";
-import { CATEGORY_ICON } from "@/lib/constants/category-icons";
-import { CLUB_STATUS_LABEL } from "@/components/admin/status-badge";
+import { CATEGORY_ICON, CATEGORY_TONE } from "@/lib/constants/category-icons";
+import { CLUB_CATEGORIES } from "@/lib/constants/categories";
+import { ClubStatusBadge } from "@/components/admin/status-badge";
 
 export type ClubListItem = {
   slug: string;
@@ -14,48 +15,32 @@ export type ClubListItem = {
   status: string;
 };
 
-// 상태 칩의 점 색상 — ClubCard(홈)의 "모집중" 칩과 같은 흰 배경 pill 위에
-// 점 색만 실제 status에 맞게 바꿔서, 사진 위에서도 항상 또렷하게 읽힌다.
-const STATUS_DOT: Record<string, string> = {
-  preparing: "bg-muted-foreground/60",
-  recruiting: "bg-coral",
-  active: "bg-purple-dark",
-  closed: "bg-muted-foreground/60",
-};
-
+// 대표사진 대신 카테고리 색상의 원형 아이콘으로 동아리를 구분한다 — 나중에
+// 회장이 소개/활동 텍스트를 직접 수정할 수 있도록 카드 구조를 텍스트 중심으로
+// 유지한다(대표사진 없음). 색상은 홈 MyClubCard와 동일하게 카테고리 순서로 배정.
 export function ClubListCard({ club }: { club: ClubListItem }) {
   const meetingInfo = [club.meetingDay, club.meetingLocation].filter(Boolean).join(" · ");
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
-  // club-card.tsx(홈)와 동일한 이유로 suda.png에만 밝기/대비/채도 보정과
-  // 인물 위치 보정을 적용한다 — "기존 이미지와 정보를 그대로 활용".
-  const coverFilter = club.slug === "suda" ? "brightness(1.1) contrast(1.05) saturate(1.2)" : undefined;
-  const coverPosition = club.slug === "suda" ? "70% 35%" : undefined;
+  const categoryIndex = CLUB_CATEGORIES.indexOf(club.category as (typeof CLUB_CATEGORIES)[number]);
+  const tone = CATEGORY_TONE[(categoryIndex < 0 ? 0 : categoryIndex) % CATEGORY_TONE.length];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-white">
-      <div
-        className="relative flex h-28 w-full shrink-0 items-center justify-center bg-muted bg-cover sm:h-52"
-        style={
-          club.coverImageUrl
-            ? {
-                backgroundImage: `url(${club.coverImageUrl})`,
-                backgroundPosition: coverPosition ?? "center",
-                filter: coverFilter,
-              }
-            : undefined
-        }
-      >
-        {!club.coverImageUrl && <CategoryIcon className="h-9 w-9 text-muted-foreground/30" strokeWidth={1.5} />}
-        <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-foreground ring-1 ring-border sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
-          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[club.status] ?? "bg-muted-foreground/60"}`} />
-          {CLUB_STATUS_LABEL[club.status] ?? club.status}
-        </span>
+    <div className="flex h-full flex-col gap-2.5 rounded-lg border border-border bg-white p-3.5 sm:gap-3 sm:p-6">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-11 sm:w-11 ${tone}`}>
+            <CategoryIcon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-bold tracking-tight text-foreground sm:text-2xl">{club.name}</h3>
+            <span className="text-xs font-semibold text-muted-foreground sm:text-sm">{club.category}</span>
+          </div>
+        </div>
+        <div className="shrink-0">
+          <ClubStatusBadge status={club.status} />
+        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-3.5 sm:gap-2.5 sm:p-6">
-        <span className="w-fit rounded-full bg-coral-soft px-2 py-0.5 text-[11px] font-semibold text-coral-dark sm:px-2.5 sm:py-1 sm:text-xs">
-          {club.category}
-        </span>
-        <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-2xl">{club.name}</h3>
+      <div className="flex flex-1 flex-col gap-1.5 sm:gap-2.5">
         {club.description && (
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:line-clamp-3 sm:text-base">
             {club.description}

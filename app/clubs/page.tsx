@@ -65,25 +65,26 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
-      {/* 비주얼 배너 — clubs-banner.png는 왼쪽에 텍스트를 위한 여백이 이미
-          구도상 비어있는 사진이라, 그 여백을 그대로 살려 배경 전체에 깔고
-          텍스트를 그 위에 얹는다. 사진 자체의 여백만으로 부족한 경우를
-          대비해 왼쪽에서 옅어지는 흰색 그라데이션을 한 겹 더해 어떤
-          크롭에서도 텍스트가 항상 읽히게 한다. */}
-      <section className="relative overflow-hidden rounded-lg">
-        <div className="absolute inset-0">
-          <Image
-            src="/clubs-banner.png"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover"
-            style={{ objectPosition: "center 58%" }}
-            priority
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-transparent sm:from-white/90 sm:via-white/30 sm:to-transparent" />
-        <div className="relative z-10 max-w-[62%] px-4 py-8 sm:max-w-[46%] sm:px-8 sm:py-14">
+      {/* 비주얼 배너 — 하나의 긴 통합 배너 박스(모바일 150px / 데스크톱
+          270px 고정)를 object-cover로 꽉 채운다. objectPosition
+          "right 15%"로 기본 크롭을 잡은 뒤, 얼굴이 더 또렷하게 보이도록
+          scale(1.35)로 추가 확대한다. transformOrigin을 얼굴이 몰린
+          지점(78% 40%, 박스 기준)에 고정해 확대해도 네 명의 머리·얼굴·
+          카메라·기타가 프레임 안에 남고, 대신 하체·계단·신발 쪽이 더
+          잘리는 방향으로 크롭되게 한다. 텍스트 가독성용 크림색
+          그라데이션은 문구가 있는 왼쪽 영역에만 좁게 둔다. */}
+      <section className="relative h-[150px] overflow-hidden rounded-lg sm:h-[270px]">
+        <Image
+          src="/clubs-banner.png"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover"
+          style={{ objectPosition: "right 15%", transform: "scale(1.35)", transformOrigin: "78% 40%" }}
+          priority
+        />
+        <div className="absolute inset-y-0 left-0 w-[70%] bg-gradient-to-r from-white/95 via-white/60 to-transparent sm:w-[55%] sm:from-white/90 sm:via-white/40" />
+        <div className="absolute inset-0 z-10 flex max-w-[62%] flex-col justify-center px-4 py-8 sm:max-w-[46%] sm:px-8 sm:py-14">
           <h1 className="text-lg font-extrabold leading-snug text-[#16234a] sm:text-2xl lg:text-3xl">
             나와 맞는 동아리를 찾아보세요
           </h1>
