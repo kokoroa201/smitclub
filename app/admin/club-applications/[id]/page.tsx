@@ -39,9 +39,14 @@ type ApplicationDetail = {
   advisor_name: string | null;
   advisor_department: string | null;
   advisor_email: string | null;
+  advisor_student_consent: boolean;
   advisor_confirmed: boolean;
   advisor_confirmed_at: string | null;
+  advisor_confirmed_by: string | null;
+  advisor_confirmation_method: string | null;
+  advisor_note: string | null;
   recommended_at: string | null;
+  president_profile_id: string | null;
 };
 
 type Founder = {
@@ -66,7 +71,7 @@ export default async function AdminClubApplicationDetailPage(
   const { data: application } = await supabase
     .from("club_applications")
     .select(
-      "id, applicant_id, club_name, club_name_en, category, registration_category, purpose, activity_plan, meeting_day, meeting_time, meeting_location, meeting_frequency, status, admin_note, agree_rules, eligibility_checklist, review_requested_at, created_at, treasurer_name, vice_president_name, advisor_name, advisor_department, advisor_email, advisor_confirmed, advisor_confirmed_at, recommended_at",
+      "id, applicant_id, club_name, club_name_en, category, registration_category, purpose, activity_plan, meeting_day, meeting_time, meeting_location, meeting_frequency, status, admin_note, agree_rules, eligibility_checklist, review_requested_at, created_at, treasurer_name, vice_president_name, advisor_name, advisor_department, advisor_email, advisor_student_consent, advisor_confirmed, advisor_confirmed_at, advisor_confirmed_by, advisor_confirmation_method, advisor_note, recommended_at, president_profile_id",
     )
     .eq("id", id)
     .single<ApplicationDetail>();
@@ -75,14 +80,21 @@ export default async function AdminClubApplicationDetailPage(
     notFound();
   }
 
-  const [{ data: applicant }, { data: founders }] = await Promise.all([
-    supabase.from("profiles").select("name").eq("id", application.applicant_id).single(),
-    supabase
-      .from("club_application_founders")
-      .select("id, name, student_id, is_current_student, nationality, contact")
-      .eq("application_id", id)
-      .returns<Founder[]>(),
-  ]);
+  const [{ data: applicant }, { data: founders }, { data: advisorConfirmedByProfile }, { data: presidentProfile }] =
+    await Promise.all([
+      supabase.from("profiles").select("name").eq("id", application.applicant_id).single(),
+      supabase
+        .from("club_application_founders")
+        .select("id, name, student_id, is_current_student, nationality, contact")
+        .eq("application_id", id)
+        .returns<Founder[]>(),
+      application.advisor_confirmed_by
+        ? supabase.from("profiles").select("name").eq("id", application.advisor_confirmed_by).single()
+        : Promise.resolve({ data: null }),
+      application.president_profile_id
+        ? supabase.from("profiles").select("name, role").eq("id", application.president_profile_id).single()
+        : Promise.resolve({ data: null }),
+    ]);
 
   const founderList = founders ?? [];
   const koreanCount = founderList.filter((f) => f.nationality === "domestic").length;
@@ -142,17 +154,20 @@ export default async function AdminClubApplicationDetailPage(
         />
         <Field label="총무" value={application.treasurer_name ?? "미지정"} />
         <Field label="부회장" value={application.vice_president_name ?? "없음"} />
-        <Field
-          label="지도교수"
-          value={
-            application.advisor_name
-              ? `${application.advisor_name} (${application.advisor_department ?? "-"}) · ${application.advisor_email ?? "-"}${
-                  application.advisor_confirmed ? " · 확인 완료" : " · 확인 대기"
-                }`
-              : "1차 검토 이후 확인 예정"
-          }
-        />
         {application.admin_note && <Field label="관리자 메모" value={application.admin_note} />}
+      </section>
+
+      <section className="mt-6 rounded-card border border-border bg-card p-6">
+        <h2 className="mb-3 text-lg font-bold text-foreground">지도교수 사전 동의 정보 (신청자 제출)</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="성명" value={application.advisor_name ?? "미기재"} />
+          <Field label="소속 학과/전공" value={application.advisor_department ?? "미기재"} />
+          <Field label="학교 이메일" value={application.advisor_email ?? "미기재"} />
+          <Field
+            label="사전 동의 여부 (학생 응답)"
+            value={application.advisor_student_consent ? "동의함" : "미동의"}
+          />
+        </div>
       </section>
 
       <section className="mt-6">
@@ -261,49 +276,39 @@ export default async function AdminClubApplicationDetailPage(
         </section>
       )}
 
-      {application.status === "submitted" && application.review_requested_at && (
+      {application.status === "submitted" && (
         <section className="mt-6 rounded-card border border-border bg-card p-4">
           <h2 className="mb-2 text-lg font-bold text-foreground">지도교수 확인</h2>
+          <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            <span className="text-foreground">
+              확인 상태:{" "}
+              <span className={`font-bold ${application.advisor_confirmed ? "text-blue-dark" : "text-yellow-dark"}`}>
+                {application.advisor_confirmed ? "확인 완료" : "확인 대기"}
+              </span>
+            </span>
+            <span className="text-foreground">확인 방법: 학교 이메일 회신</span>
+          </div>
+
           {application.advisor_confirmed ? (
-            <p className="text-sm text-muted-foreground">
-              {application.advisor_confirmed_at && new Date(application.advisor_confirmed_at).toLocaleString("ko-KR")}에
-              확인 완료 — {application.advisor_name} ({application.advisor_department})
-            </p>
+            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+              <p>
+                확인일시:{" "}
+                {application.advisor_confirmed_at
+                  ? new Date(application.advisor_confirmed_at).toLocaleString("ko-KR")
+                  : "-"}
+              </p>
+              <p>확인자: {advisorConfirmedByProfile?.name ?? "-"}</p>
+              {application.advisor_note && <p>확인 메모: {application.advisor_note}</p>}
+            </div>
           ) : (
             <form action={confirmAdvisorWithId} className="flex flex-col gap-3">
               <p className="text-xs text-muted-foreground">
-                원우회가 지도교수와 별도로 조율한 정보를 입력하고 확인 완료 처리합니다.
+                지도교수의 학교 이메일({application.advisor_email ?? "-"})로 회신을 받아 사전 동의를
+                확인한 뒤 아래에서 확인 완료 처리합니다.
               </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input name="advisor_name" placeholder="성명 Name" required className="rounded-md border border-border px-3 py-2 text-sm" />
-                <input
-                  name="advisor_department"
-                  placeholder="소속학과/전공 Department"
-                  required
-                  className="rounded-md border border-border px-3 py-2 text-sm"
-                />
-                <input name="advisor_contact" placeholder="연락처 Contact" required className="rounded-md border border-border px-3 py-2 text-sm" />
-                <input
-                  type="email"
-                  name="advisor_email"
-                  placeholder="이메일 E-Mail"
-                  required
-                  className="rounded-md border border-border px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <label className="flex items-center gap-1.5">
-                  <input type="radio" name="advisor_appointment_method" value="faculty_volunteer" required />
-                  교수 자원
-                </label>
-                <label className="flex items-center gap-1.5">
-                  <input type="radio" name="advisor_appointment_method" value="school_recommendation" />
-                  학교 추천
-                </label>
-              </div>
               <textarea
                 name="advisor_note"
-                placeholder="특기사항 (선택)"
+                placeholder="확인 메모 (선택)"
                 rows={2}
                 className="rounded-md border border-border px-3 py-2 text-sm"
               />
@@ -339,6 +344,26 @@ export default async function AdminClubApplicationDetailPage(
             {application.recommended_at && new Date(application.recommended_at).toLocaleString("ko-KR")}에 원우회가 학교에
             승인을 추천했습니다. 아래에서 학교 최종 승인을 처리할 수 있습니다.
           </p>
+
+          <div className="mt-3 border-t border-border pt-3">
+            {presidentProfile ? (
+              <p className="text-sm text-foreground">
+                회장 계정 확인됨 · {presidentProfile.name}
+                {presidentProfile.role === "super_admin" ? (
+                  <span className="ml-1 text-muted-foreground">
+                    (이미 super_admin — 승인해도 club_admin으로 낮추지 않습니다)
+                  </span>
+                ) : (
+                  <span className="ml-1 text-muted-foreground">(승인 시 club_admin으로 지정됩니다)</span>
+                )}
+              </p>
+            ) : (
+              <p className="text-sm font-bold text-coral-dark">
+                ⚠ 회장 계정이 연결되어 있지 않습니다. 승인은 계속 진행되지만 club_admin과
+                clubs.president_id가 자동으로 연결되지 않습니다.
+              </p>
+            )}
+          </div>
         </section>
       )}
 

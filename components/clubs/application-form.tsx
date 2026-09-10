@@ -332,6 +332,34 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
           설립 목적 (Purpose of Club)
           <textarea name="purpose" required rows={3} className={inputClass} />
         </label>
+
+        <div className="rounded-md border border-border p-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            지도교수 사전 동의(확인) Faculty Advisor Pre-Consent
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            재정지원이 가능한 동아리로 관리되려면 지도교수의 사전 동의가 필요합니다. 아래 정보를
+            입력해주세요. 지도교수 확인은 이후 원우회·교학처가 학교 이메일 회신으로 별도 처리합니다.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className={labelClass}>
+              지도교수 성명 Advisor Name
+              <input name="advisor_name" required className={inputClass} />
+            </label>
+            <label className={labelClass}>
+              소속 학과/전공 Advisor Department
+              <input name="advisor_department" required className={inputClass} />
+            </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              학교 이메일 Advisor School E-Mail
+              <input type="email" name="advisor_email" required className={inputClass} />
+            </label>
+          </div>
+          <label className="mt-3 flex items-start gap-2 text-sm">
+            <input type="checkbox" name="advisor_student_consent" required className="mt-1" />
+            지도교수와 사전 협의하여 동아리 지도에 관한 동의를 받았습니다.
+          </label>
+        </div>
       </section>
 
       <section className="flex flex-col gap-4">
@@ -700,11 +728,6 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
           )}
         </div>
       </section>
-
-      <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-        지도교수 확인(서식5)은 원우회 1차 검토 통과 후 별도 단계에서 진행됩니다. 지금은 입력하지
-        않아도 됩니다.
-      </p>
 
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="agree_rules" required className="mt-1" />

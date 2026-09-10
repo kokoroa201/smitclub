@@ -114,6 +114,11 @@ export default async function MyPage() {
     .map((m) => m.clubs)
     .filter((club): club is NonNullable<MembershipRow["clubs"]> => club !== null);
 
+  // role === 'club_admin' 여부가 아니라 실제 clubs.president_id 연결을
+  // 기준으로 노출한다 — super_admin이 회장으로 지정된 경우에도(role은
+  // club_admin으로 낮추지 않으므로) 이 진입점이 보여야 한다.
+  const { data: myClub } = await supabase.from("clubs").select("id").eq("president_id", profile.id).maybeSingle();
+
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <h1 className="text-2xl font-bold text-foreground">MY</h1>
@@ -135,6 +140,18 @@ export default async function MyPage() {
           />
         </div>
       </section>
+
+      {myClub && (
+        <section className="mt-8 flex items-center justify-between gap-3 rounded-card border border-border bg-card p-4">
+          <p className="text-sm text-foreground">회장으로 등록된 동아리의 소개·대표사진·활동·SNS·모집글을 관리할 수 있습니다.</p>
+          <Link
+            href="/my/club"
+            className="shrink-0 rounded-full bg-coral px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            내 동아리 관리
+          </Link>
+        </section>
+      )}
 
       <section className="mt-8">
         <h2 className="text-lg font-bold text-foreground">내 동아리 신청</h2>

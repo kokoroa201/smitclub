@@ -19,6 +19,9 @@ type ClubApplicationRow = {
   meeting_location: string | null;
   established_at: string | null;
   status: string;
+  advisor_name: string | null;
+  advisor_department: string | null;
+  president_profile_id: string | null;
 };
 
 function slugify(name: string): string {
@@ -122,9 +125,12 @@ export async function requestReview(applicationId: string) {
   redirect(`/admin/club-applications/${applicationId}`);
 }
 
-// 지도교수 확인 — 최초 신청 제출의 필수 단계가 아니라, 원우회가 검토 요청을
-// 보낸 뒤(review_requested_at 존재) 지도교수와 별도로 조율해 기록하는 단계.
-// 이 단계를 통과(advisor_confirmed=true)해야 학교 승인 추천으로 넘어갈 수 있다.
+// 지도교수 확인 — 지도교수 성명/소속 학과·전공/학교 이메일은 신청자가 신청서
+// 제출 시 이미 입력했다(component/clubs/application-form.tsx의 "지도교수
+// 사전 동의" 섹션). 원우회·교학처는 그 학교 이메일로 지도교수 본인에게 회신을
+// 받아 확인한 뒤 이 액션으로 확인 완료 처리만 한다. 확인 방법은 현재
+// "학교 이메일 회신" 한 가지만 운영한다. 이 단계를 통과(advisor_confirmed=
+// true)해야 학교 승인 추천으로 넘어갈 수 있다.
 export async function confirmAdvisor(applicationId: string, formData: FormData) {
   const admin = await requireSuperAdmin();
   const cookieStore = await cookies();
@@ -132,41 +138,26 @@ export async function confirmAdvisor(applicationId: string, formData: FormData) 
 
   const { data: application } = await supabase
     .from("club_applications")
-    .select("id, status, review_requested_at")
+    .select("id, status")
     .eq("id", applicationId)
     .single();
 
-  if (!application || application.status !== "submitted" || !application.review_requested_at) {
+  if (!application || application.status !== "submitted") {
     redirect(
-      `/admin/club-applications/${applicationId}?error=${encodeURIComponent("원우회 검토 요청을 먼저 보낸 뒤 지도교수 확인을 진행할 수 있습니다.")}`,
+      `/admin/club-applications/${applicationId}?error=${encodeURIComponent("지도교수 확인은 검토 대기 상태의 신청서에서만 처리할 수 있습니다.")}`,
     );
   }
 
-  const advisorName = String(formData.get("advisor_name") ?? "").trim();
-  const advisorDepartment = String(formData.get("advisor_department") ?? "").trim();
-  const advisorContact = String(formData.get("advisor_contact") ?? "").trim();
-  const advisorEmail = String(formData.get("advisor_email") ?? "").trim();
-  const advisorAppointmentMethod = String(formData.get("advisor_appointment_method") ?? "").trim();
   const advisorNote = String(formData.get("advisor_note") ?? "").trim();
-
-  if (!advisorName || !advisorDepartment || !advisorContact || !advisorEmail || !advisorAppointmentMethod) {
-    redirect(
-      `/admin/club-applications/${applicationId}?error=${encodeURIComponent("지도교수 정보(성명, 소속학과, 연락처, 이메일, 선임경위)를 모두 입력해주세요.")}`,
-    );
-  }
 
   await supabase
     .from("club_applications")
     .update({
-      advisor_name: advisorName,
-      advisor_department: advisorDepartment,
-      advisor_contact: advisorContact,
-      advisor_email: advisorEmail,
-      advisor_appointment_method: advisorAppointmentMethod,
-      advisor_note: advisorNote || null,
       advisor_confirmed: true,
       advisor_confirmed_at: new Date().toISOString(),
       advisor_confirmed_by: admin.id,
+      advisor_confirmation_method: "school_email_reply",
+      advisor_note: advisorNote || null,
     })
     .eq("id", applicationId);
 
@@ -210,7 +201,7 @@ export async function approveApplication(applicationId: string, formData: FormDa
   const { data, error: fetchError } = await supabase
     .from("club_applications")
     .select(
-      "id, applicant_id, club_name, club_name_en, category, purpose, meeting_day, meeting_time, meeting_location, established_at, status",
+      "id, applicant_id, club_name, club_name_en, category, purpose, meeting_day, meeting_time, meeting_location, established_at, status, advisor_name, advisor_department, president_profile_id",
     )
     .eq("id", applicationId)
     .single();
@@ -227,6 +218,25 @@ export async function approveApplication(applicationId: string, formData: FormDa
     );
   }
 
+  // club_admin은 신청서 제출자(applicant_id)가 아니라 이 동아리의 실제 회장
+  // 계정(president_profile_id)에게 부여한다 — 신청자와 회장이 다를 수 있기
+  // 때문이다(lib/actions/club-applications.ts 참고). 현재 신청폼은 항상
+  // "회장 = 신청자 본인"으로 제출하므로 지금은 매번 일치하지만, 이 로직은
+  // applicant_id를 직접 쓰지 않고 항상 president_profile_id를 거쳐 간다.
+  // 회장 계정이 연결되어 있지 않으면(president_profile_id가 null이거나
+  // 참조하는 프로필이 더 이상 없는 경우) 아무에게도 club_admin을 자동
+  // 부여하지 않고 clubs.president_id도 null로 둔 채 승인을 계속 진행한다 —
+  // 사후 지정 UI는 별도 기능(회장 변경 요청/수락 흐름)으로 다룰 예정이라
+  // 여기서는 관리자 화면에 경고만 표시한다(app/admin/club-applications/[id]/
+  // page.tsx).
+  const { data: presidentProfile } = application.president_profile_id
+    ? await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", application.president_profile_id)
+        .single()
+    : { data: null };
+
   const { data: club, error: clubError } = await supabase
     .from("clubs")
     .insert({
@@ -240,7 +250,9 @@ export async function approveApplication(applicationId: string, formData: FormDa
       meeting_time: application.meeting_time,
       meeting_location: application.meeting_location,
       founded_year: application.established_at ? new Date(application.established_at).getFullYear() : null,
-      president_id: application.applicant_id,
+      president_id: presidentProfile?.id ?? null,
+      advisor_name: application.advisor_name,
+      advisor_department: application.advisor_department,
     })
     .select("id")
     .single();
@@ -249,15 +261,19 @@ export async function approveApplication(applicationId: string, formData: FormDa
     redirect(`/admin/club-applications/${applicationId}?error=${encodeURIComponent("동아리 생성 중 오류가 발생했습니다.")}`);
   }
 
-  const { error: roleError } = await supabase
-    .from("profiles")
-    .update({ role: "club_admin" })
-    .eq("id", application.applicant_id);
+  // 이미 super_admin인 계정은 club_admin으로 낮추거나 덮어쓰지 않는다(원우회장
+  // 등이 본인 동아리 회장을 겸하는 경우를 보호).
+  if (presidentProfile && presidentProfile.role !== "super_admin") {
+    const { error: roleError } = await supabase
+      .from("profiles")
+      .update({ role: "club_admin" })
+      .eq("id", presidentProfile.id);
 
-  if (roleError) {
-    redirect(
-      `/admin/club-applications/${applicationId}?error=${encodeURIComponent("신청자 권한 승격 중 오류가 발생했습니다. 0004 마이그레이션이 적용됐는지 확인해주세요.")}`,
-    );
+    if (roleError) {
+      redirect(
+        `/admin/club-applications/${applicationId}?error=${encodeURIComponent("회장 권한 승격 중 오류가 발생했습니다. 0004 마이그레이션이 적용됐는지 확인해주세요.")}`,
+      );
+    }
   }
 
   const reviewedAt = new Date().toISOString();

@@ -77,6 +77,8 @@ function digitsOnly(value: string): string {
   return value.replace(/\D/g, "");
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function submitClubApplication(
   _prevState: SubmitClubApplicationState,
   formData: FormData,
@@ -131,6 +133,11 @@ export async function submitClubApplication(
       ([, value]) => value.length > 0,
     ),
   );
+
+  const advisorName = field(formData, "advisor_name");
+  const advisorDepartment = field(formData, "advisor_department");
+  const advisorEmail = field(formData, "advisor_email");
+  const advisorStudentConsent = formData.get("advisor_student_consent") === "on";
 
   const agreeRules = formData.get("agree_rules") === "on";
   const founders = parseFounders(formData);
@@ -199,6 +206,18 @@ export async function submitClubApplication(
     }
   }
 
+  if (!advisorName || !advisorDepartment || !advisorEmail) {
+    return { error: "지도교수 성명, 소속 학과/전공, 학교 이메일을 입력해주세요.", success: false };
+  }
+
+  if (!EMAIL_PATTERN.test(advisorEmail)) {
+    return { error: "지도교수 학교 이메일 형식이 올바르지 않습니다.", success: false };
+  }
+
+  if (!advisorStudentConsent) {
+    return { error: "지도교수와 사전 협의하여 동의를 받았는지 확인해주세요.", success: false };
+  }
+
   if (!agreeRules) {
     return { error: "준수사항에 동의해야 신청할 수 있습니다.", success: false };
   }
@@ -253,6 +272,11 @@ export async function submitClubApplication(
     .from("club_applications")
     .insert({
       applicant_id: profile.id,
+      // 현재 신청폼은 "회장 = 신청자 본인"만 지원한다(섹션 2 임원현황 참고).
+      // 신청자와 회장이 달라질 수 있는 미래를 대비해 별도 컬럼으로 둔다 —
+      // 승인 처리(lib/actions/admin-applications.ts approveApplication)는
+      // applicant_id가 아니라 이 값을 기준으로 club_admin을 부여한다.
+      president_profile_id: profile.id,
       club_name: clubName,
       club_name_en: clubNameEn || null,
       category,
@@ -283,6 +307,10 @@ export async function submitClubApplication(
       has_membership_fee: hasMembershipFee,
       membership_fee_amount: membershipFeeAmount,
       membership_fee_cycle: hasMembershipFee ? membershipFeeCycle : null,
+      advisor_name: advisorName,
+      advisor_department: advisorDepartment,
+      advisor_email: advisorEmail,
+      advisor_student_consent: advisorStudentConsent,
       agree_rules: agreeRules,
       status: "submitted",
       // validation_passed는 원우회 검토(자격요건 확인) 단계에서 admin만 설정할
