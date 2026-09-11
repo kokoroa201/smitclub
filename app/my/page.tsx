@@ -4,8 +4,9 @@ import { cookies } from "next/headers";
 import { AlertTriangle, BadgeCheck, Clock, FileEdit as FileEditIcon, Sparkles, ThumbsUp, XCircle, type LucideIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
+import { requestOwnPasswordReset } from "@/lib/actions/auth";
 import { EditContactForm } from "@/components/profile/edit-contact-form";
-import { ClubStatusBadge, APPLICATION_STATUS_LABEL } from "@/components/admin/status-badge";
+import { ClubStatusBadge, APPLICATION_STATUS_LABEL, MembershipStatusBadge } from "@/components/admin/status-badge";
 import { CATEGORY_ICON, CATEGORY_TONE } from "@/lib/constants/category-icons";
 import { CLUB_CATEGORIES } from "@/lib/constants/categories";
 import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
@@ -15,6 +16,15 @@ import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
 // 비어있다면 그 값을 목록의 표기("미디어비즈니스전공")에 맞춰 최대한
 // 매칭해 초기값으로 보여준다 — DB 값을 옮기거나 지우지는 않고 화면
 // 표시에만 쓰며, 매칭되는 항목이 없으면 빈 선택으로 둔다.
+// 재설정 발송 안내에 이메일을 그대로 노출하지 않기 위한 마스킹. 별표
+// 개수를 고정해 실제 아이디 길이도 함께 드러나지 않게 한다.
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}***@${domain}`;
+}
+
 function normalizeLegacyDepartment(affiliation: string | null | undefined): string {
   if (!affiliation) return "";
   const trimmed = affiliation.trim();
@@ -71,11 +81,14 @@ type MembershipRow = {
   } | null;
 };
 
-export default async function MyPage() {
+export default async function MyPage(props: PageProps<"/my">) {
   const profile = await getCurrentProfile();
   if (!profile) {
     redirect("/login");
   }
+
+  const searchParams = await props.searchParams;
+  const securitySent = searchParams.security_sent === "1";
 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -107,10 +120,11 @@ export default async function MyPage() {
     .from("club_memberships")
     .select("id, status, applied_at, clubs(id, name, slug, category, cover_image_url, status)")
     .eq("user_id", profile.id)
-    .eq("status", "approved")
     .order("applied_at", { ascending: false })
     .returns<MembershipRow[]>();
-  const joinedClubs = (membershipsData ?? [])
+  const memberships = membershipsData ?? [];
+  const joinedClubs = memberships
+    .filter((m) => m.status === "approved")
     .map((m) => m.clubs)
     .filter((club): club is NonNullable<MembershipRow["clubs"]> => club !== null);
 
@@ -139,6 +153,28 @@ export default async function MyPage() {
             initialDepartment={privateData?.department || normalizeLegacyDepartment(privateData?.affiliation)}
           />
         </div>
+      </section>
+
+      <section className="mt-8 flex flex-col gap-3 rounded-card border border-border bg-card p-6">
+        <h2 className="text-lg font-bold text-foreground">계정 보안</h2>
+        <p className="text-sm text-muted-foreground">
+          비밀번호가 노출되었거나 변경이 필요하면 등록된 이메일로 재설정 링크를 보낼 수 있습니다.
+        </p>
+
+        {securitySent && (
+          <p className="rounded-md bg-blue-soft px-3 py-2 text-sm text-blue-dark">
+            등록된 이메일({maskEmail(email)})로 비밀번호 재설정 링크를 보냈습니다.
+          </p>
+        )}
+
+        <form action={requestOwnPasswordReset}>
+          <button
+            type="submit"
+            className="w-fit rounded-full bg-coral px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            비밀번호 변경 링크 보내기
+          </button>
+        </form>
       </section>
 
       {myClub && (
@@ -170,6 +206,29 @@ export default async function MyPage() {
             {applications.map((application) => (
               <ApplicationCard key={application.id} application={application} />
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-bold text-foreground">가입 신청 현황</h2>
+        {memberships.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">가입 신청한 동아리가 없습니다.</p>
+        ) : (
+          <div className="mt-3 flex flex-col gap-2">
+            {memberships.map((membership) =>
+              membership.clubs ? (
+                <div
+                  key={membership.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3"
+                >
+                  <Link href={`/clubs/${membership.clubs.slug}`} className="min-w-0 flex-1 truncate text-sm font-bold text-foreground hover:underline">
+                    {membership.clubs.name}
+                  </Link>
+                  <MembershipStatusBadge status={membership.status} />
+                </div>
+              ) : null,
+            )}
           </div>
         )}
       </section>

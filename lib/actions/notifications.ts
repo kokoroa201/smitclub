@@ -5,11 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
 
-export type NotificationType =
-  | "application_review_requested"
-  | "application_approved"
-  | "application_rejected"
-  | "application_needs_revision";
+export type { NotificationType } from "@/lib/notify";
 
 export async function markNotificationRead(notificationId: string) {
   const profile = await getCurrentProfile();

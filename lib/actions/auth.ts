@@ -130,3 +130,31 @@ export async function requestPasswordReset(formData: FormData) {
   // 안내로 리다이렉트한다.
   redirect("/forgot-password?sent=1");
 }
+
+// MY > 계정 보안에서 쓰는 "비밀번호 변경 링크 보내기" — formData를 전혀 받지
+// 않는다. 이메일을 폼 입력으로 받으면 다른 사람 주소로 보내도록 값을
+// 바꿔치기할 여지가 생기므로, 항상 현재 로그인 세션의 실제 이메일(auth.
+// getUser())만 사용한다. 재설정 링크 발급/속도제한은 Supabase Auth가
+// resetPasswordForEmail 호출마다 이미 처리한다(이메일당 짧은 재요청 간격
+// 제한) — 여기서 성공/실패를 구분해 보여주지 않는 것도 requestPasswordReset과
+// 동일한 이유(계정 상태 노출 방지)다.
+export async function requestOwnPasswordReset() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    redirect("/login");
+  }
+
+  const origin = await getOrigin();
+
+  await supabase.auth.resetPasswordForEmail(user.email, {
+    redirectTo: `${origin}/reset-password`,
+  });
+
+  redirect("/my?security_sent=1");
+}

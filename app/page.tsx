@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { ClubCard, type ClubCardData } from "@/components/clubs/club-card";
 import { ClubCardMini } from "@/components/clubs/club-card-mini";
 import { NextClubCard, NextClubCardMini } from "@/components/home/next-club-card";
-import { SchoolNews } from "@/components/home/school-news";
+import { NewsPreview } from "@/components/home/news-preview";
 import { HomeFreshness } from "@/components/home/home-freshness";
 
 // SUDA는 모집 상태와 무관하게 홈에 카드 1개가 항상 보여야 하는 대표
@@ -171,8 +171,8 @@ export default async function Home() {
         )}
       </section>
 
-      {/* 학교 & 원우회 소식 — 모집 중 동아리 바로 아래 */}
-      <SchoolNews />
+      {/* 소식(공지·학사일정) 미리보기 — 모집 중 동아리 바로 아래 */}
+      <NewsPreview />
 
       {/* 이런 동아리 어때요? (카테고리 탐색)는 동아리 수가 늘어나 분류가
           필요해지면 다시 노출한다. 컴포넌트는 components/home/category-explorer.tsx

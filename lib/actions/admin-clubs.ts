@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/lib/auth";
 
@@ -12,14 +12,18 @@ export async function updateClubStatus(clubId: string, formData: FormData) {
 
   const status = String(formData.get("status") ?? "");
   if (!CLUB_STATUSES.includes(status as (typeof CLUB_STATUSES)[number])) {
-    return;
+    redirect(`/admin/clubs?error=${encodeURIComponent("올바르지 않은 상태 값입니다.")}`);
   }
 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  await supabase.from("clubs").update({ status }).eq("id", clubId);
+  const { error } = await supabase.from("clubs").update({ status }).eq("id", clubId);
 
-  revalidatePath("/admin/clubs");
-  revalidatePath("/admin");
+  if (error) {
+    console.error("clubs status update failed", error);
+    redirect(`/admin/clubs?error=${encodeURIComponent(`상태 변경 중 오류가 발생했습니다: ${error.message}`)}`);
+  }
+
+  redirect("/admin/clubs");
 }

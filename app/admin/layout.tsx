@@ -7,6 +7,7 @@ const ADMIN_NAV = [
   { href: "/admin/clubs", label: "동아리" },
   { href: "/admin/members", label: "회원" },
   { href: "/admin/notices", label: "공지" },
+  { href: "/admin/notify", label: "알림 보내기" },
 ];
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {

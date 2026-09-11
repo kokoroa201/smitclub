@@ -10,6 +10,11 @@ const TYPE_LABEL: Record<string, string> = {
   application_approved: "승인 완료",
   application_rejected: "반려",
   application_needs_revision: "보완 요청",
+  application_submitted: "개설 신청 접수",
+  membership_applied: "가입 신청",
+  membership_approved: "가입 승인",
+  membership_rejected: "가입 거절",
+  admin_broadcast: "공지",
 };
 
 type NotificationRow = {

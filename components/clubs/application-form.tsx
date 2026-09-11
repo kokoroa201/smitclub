@@ -274,8 +274,8 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
             <input name="club_name" required className={inputClass} />
           </label>
           <label className={labelClass}>
-            동아리명 영문 (Club Name, English) — 선택
-            <input name="club_name_en" className={inputClass} />
+            동아리명 영문 (Club Name, English)
+            <input name="club_name_en" required className={inputClass} />
           </label>
         </div>
 
@@ -334,7 +334,7 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
         </label>
 
         <div className="rounded-md border border-border p-3">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-bold text-blue-dark">
             지도교수 사전 동의(확인) Faculty Advisor Pre-Consent
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -702,7 +702,13 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
         <h2 className="text-lg font-bold text-foreground">5. 회칙 관련 사항 (Constitution)</h2>
         <label className={labelClass}>
           회원 가입 승인 처리 기한 (회칙 제5조, 일 단위)
-          <input type="number" name="membership_approval_days" min={1} required className={inputClass} />
+          <select name="membership_approval_days" defaultValue={3} required className={inputClass}>
+            {[1, 2, 3, 4, 5, 6, 7].map((days) => (
+              <option key={days} value={days}>
+                {days}일
+              </option>
+            ))}
+          </select>
         </label>
         <div className="rounded-md border border-border p-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-foreground">

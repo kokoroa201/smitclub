@@ -3,7 +3,7 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import { Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { ClubListCard, type ClubListItem } from "@/components/clubs/club-list-card";
+import { ClubListCard, ClubListPlaceholderCard, type ClubListItem } from "@/components/clubs/club-list-card";
 
 const STATUS_TABS = [
   { key: "all", label: "전체" },
@@ -22,21 +22,19 @@ const EMPTY_MESSAGE: Record<StatusFilter, string> = {
 function toClubListItem(club: {
   slug: string;
   name: string;
+  name_en: string | null;
   category: string;
   description: string | null;
-  cover_image_url: string | null;
-  meeting_day: string | null;
-  meeting_location: string | null;
+  activities: string | null;
   status: string;
 }): ClubListItem {
   return {
     slug: club.slug,
     name: club.name,
+    nameEn: club.name_en,
     category: club.category,
     description: club.description,
-    coverImageUrl: club.cover_image_url,
-    meetingDay: club.meeting_day,
-    meetingLocation: club.meeting_location,
+    activities: club.activities,
     status: club.status,
   };
 }
@@ -53,7 +51,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
 
   let query = supabase
     .from("clubs")
-    .select("slug, name, category, description, cover_image_url, meeting_day, meeting_location, status")
+    .select("slug, name, name_en, category, description, activities, status")
     .order("created_at", { ascending: false });
 
   if (statusFilter !== "all") {
@@ -121,22 +119,25 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
           <p className="text-sm text-muted-foreground">{EMPTY_MESSAGE[statusFilter]}</p>
         </div>
       ) : (
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:mt-6 sm:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:mt-8 sm:grid-cols-2 sm:gap-6">
           {clubs.map((club) => (
             <ClubListCard key={club.slug} club={club} />
           ))}
+          {clubs.length === 1 && <ClubListPlaceholderCard />}
         </div>
       )}
 
-      <div className="mt-6 flex items-center justify-between gap-3 rounded-lg border border-dashed border-border px-4 py-3 sm:mt-8">
-        <p className="text-sm text-muted-foreground">원하는 동아리가 없나요?</p>
-        <Link
-          href="/clubs/new"
-          className="shrink-0 rounded-full bg-coral px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-coral-dark sm:text-sm"
-        >
-          동아리 개설 신청
-        </Link>
-      </div>
+      {clubs.length !== 1 && (
+        <div className="mt-8 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-6 text-center sm:mt-10 sm:flex-row sm:justify-between sm:text-left">
+          <p className="text-sm font-medium text-muted-foreground sm:text-base">원하는 동아리가 없나요?</p>
+          <Link
+            href="/clubs/new"
+            className="shrink-0 rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-coral-dark"
+          >
+            동아리 개설 신청
+          </Link>
+        </div>
+      )}
     </main>
   );
 }

@@ -11,6 +11,7 @@ import {
   APPLICATION_MONTHS,
 } from "@/lib/constants/club-application-rules";
 import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
+import { notify, resolveSuperAdminIds } from "@/lib/notify";
 
 // 학과·전공은 이제 폼에서 자유 입력이 아니라 고정 목록에서 고르므로, 값이 있다면
 // 목록에 있는 값이어야 한다(비어있는 건 선택 안 함으로 허용).
@@ -142,8 +143,8 @@ export async function submitClubApplication(
   const agreeRules = formData.get("agree_rules") === "on";
   const founders = parseFounders(formData);
 
-  if (!clubName || !category || !purpose || !activityPlan) {
-    return { error: "동아리명, 카테고리, 목적, 활동계획은 필수입니다.", success: false };
+  if (!clubName || !clubNameEn || !category || !purpose || !activityPlan) {
+    return { error: "동아리명(국문·영문), 카테고리, 목적, 활동계획은 필수입니다.", success: false };
   }
 
   if (!REGISTRATION_CATEGORIES.includes(registrationCategory as (typeof REGISTRATION_CATEGORIES)[number])) {
@@ -346,6 +347,18 @@ export async function submitClubApplication(
       success: false,
     };
   }
+
+  const superAdminIds = await resolveSuperAdminIds();
+  await notify(
+    superAdminIds.map((recipientId) => ({
+      recipientId,
+      type: "application_submitted",
+      title: "새 동아리 개설 신청",
+      body: `${clubName} 동아리 개설 신청이 접수되었습니다.`,
+      link: `/admin/club-applications/${application.id}`,
+      relatedApplicationId: application.id,
+    })),
+  );
 
   return { error: null, success: true };
 }

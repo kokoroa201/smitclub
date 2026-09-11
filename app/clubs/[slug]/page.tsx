@@ -14,6 +14,7 @@ type ClubDetail = {
   status: string;
   description: string | null;
   cover_image_url: string | null;
+  activities: string | null;
   meeting_day: string | null;
   meeting_time: string | null;
   meeting_location: string | null;
@@ -32,7 +33,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
   const { data: club } = await supabase
     .from("clubs")
     .select(
-      "slug, name, name_en, category, status, description, cover_image_url, meeting_day, meeting_time, meeting_location, founded_year, advisor_name, advisor_department, sns_url, recruiting_post",
+      "slug, name, name_en, category, status, description, cover_image_url, activities, meeting_day, meeting_time, meeting_location, founded_year, advisor_name, advisor_department, sns_url, recruiting_post",
     )
     .eq("slug", slug)
     .single<ClubDetail>();
@@ -82,6 +83,15 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
             <ClubStatusBadge status={club.status} />
           </div>
 
+          {club.status === "recruiting" && (
+            <Link
+              href={`/clubs/${club.slug}/join`}
+              className="w-fit rounded-full bg-coral px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            >
+              가입 신청
+            </Link>
+          )}
+
           {club.description && (
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-base">
               {club.description}
@@ -89,6 +99,12 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
           )}
 
           <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
+            {club.activities && (
+              <div className="flex items-start gap-2">
+                <Sparkles className="h-4 w-4 shrink-0 translate-y-0.5" />
+                <span className="whitespace-pre-wrap">{club.activities}</span>
+              </div>
+            )}
             {meetingInfo && (
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 shrink-0" />
