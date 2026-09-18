@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { createNotice, updateNotice, deleteNotice } from "@/lib/actions/admin-notices";
+import { createNotice, updateNotice, deleteNotice, syncNewsNow } from "@/lib/actions/admin-notices";
 
 type NoticeRow = {
   id: string;
@@ -38,6 +38,7 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
   const searchParams = await props.searchParams;
   const error = typeof searchParams.error === "string" ? searchParams.error : null;
   const success = searchParams.success === "1";
+  const synced = typeof searchParams.synced === "string" ? searchParams.synced : null;
   const editId = typeof searchParams.edit === "string" ? searchParams.edit : null;
 
   const cookieStore = await cookies();
@@ -84,9 +85,20 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
 
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       {success && <p className="mt-4 rounded-md bg-blue-soft px-3 py-2 text-sm text-blue-dark">저장되었습니다.</p>}
+      {synced && <p className="mt-4 rounded-md bg-blue-soft px-3 py-2 text-sm text-blue-dark">동기화 완료 — {synced}</p>}
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold text-foreground">자동 수집 상태</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-foreground">자동 수집 상태</h2>
+          <form action={syncNewsNow}>
+            <button
+              type="submit"
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted"
+            >
+              지금 동기화
+            </button>
+          </form>
+        </div>
         <div className="mt-3 flex flex-col gap-2">
           {["school_academic_notice", "academic_calendar"].map((target) => {
             const run = latestSyncByTarget.get(target);

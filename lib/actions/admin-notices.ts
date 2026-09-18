@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/lib/auth";
+import { runNewsSync } from "@/lib/news-sync/run-sync";
 
 function field(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -104,4 +105,24 @@ export async function deleteNotice(noticeId: string) {
   }
 
   redirect("/admin/notices?success=1");
+}
+
+// 관리자 화면의 "지금 동기화" 버튼용 — Vercel Cron과 동일한 runNewsSync를
+// 그 자리에서 바로 호출해, 환경변수(CRON_SECRET 등) 설정 후 다음날 자동
+// 실행을 기다리지 않고 즉시 반영 여부를 확인할 수 있게 한다.
+export async function syncNewsNow() {
+  await requireSuperAdmin();
+
+  try {
+    const summary = await runNewsSync();
+    const parts = [
+      `학사공지 ${summary.notices.status === "success" ? `${summary.notices.fetchedCount}건` : `오류(${summary.notices.error})`}`,
+      `학사일정 ${summary.calendar.status === "success" ? `${summary.calendar.fetchedCount}건` : `오류(${summary.calendar.error})`}`,
+    ];
+    redirect(`/admin/notices?synced=${encodeURIComponent(parts.join(" · "))}`);
+  } catch (err) {
+    if (err && typeof err === "object" && "digest" in err) throw err; // redirect() 자체가 던지는 신호는 그대로 통과
+    const message = err instanceof Error ? err.message : "알 수 없는 오류";
+    redirect(`/admin/notices?error=${encodeURIComponent(`동기화 실행 실패: ${message}`)}`);
+  }
 }
