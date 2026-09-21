@@ -141,6 +141,10 @@ export async function submitClubApplication(
   const advisorStudentConsent = formData.get("advisor_student_consent") === "on";
 
   const agreeRules = formData.get("agree_rules") === "on";
+  // 규정/회칙을 확인했다는 열람 확인용 체크박스 — agree_rules("관련 규정을
+  // 준수하겠다"는 서약)와는 별개 항목이라 DB 컬럼을 새로 늘리지 않고 제출
+  // 게이트로만 둔다(기존 신청 데이터·심사 흐름에 영향 없음).
+  const confirmedClubRules = formData.get("confirmed_club_rules") === "on";
   const founders = parseFounders(formData);
 
   if (!clubName || !clubNameEn || !category || !purpose || !activityPlan) {
@@ -217,6 +221,10 @@ export async function submitClubApplication(
 
   if (!advisorStudentConsent) {
     return { error: "지도교수와 사전 협의하여 동의를 받았는지 확인해주세요.", success: false };
+  }
+
+  if (!confirmedClubRules) {
+    return { error: "동아리 운영규정과 표준 동아리 회칙을 확인했는지 체크해주세요.", success: false };
   }
 
   if (!agreeRules) {

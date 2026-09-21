@@ -736,6 +736,23 @@ export function ApplicationForm({ profile }: { profile: Profile }) {
       </section>
 
       <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="confirmed_club_rules" required className="mt-1" />
+        <a href="/club-rules" target="_blank" rel="noopener noreferrer" className="font-semibold text-coral-dark hover:underline">
+          동아리 운영규정
+        </a>
+        과{" "}
+        <a
+          href="/club-rules?doc=charter"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-coral-dark hover:underline"
+        >
+          표준 동아리 회칙
+        </a>
+        을 확인했습니다.
+      </label>
+
+      <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="agree_rules" required className="mt-1" />
         본인은 서울미디어대학원대학교 동아리 등록 절차 진행 및 운영 관리를 위하여 위 내용을
         사실에 따라 작성하였으며, 관련 규정을 준수할 것을 확인합니다.

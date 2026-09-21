@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Home, Newspaper, UserRound, type LucideIcon } from "lucide-react";
 
+// "동아리 안내"(/club-rules)는 여기 독립 탭으로 두지 않는다 — 중앙 MAKE
+// 버튼과 겹쳐 어색했던 자리라, 대신 MAKE(→ /clubs/new) 진입 화면 상단에서
+// "개설 절차·운영규정·표준 회칙 보기"로 안내한다. 데스크톱 헤더 메뉴에는
+// 계속 유지(components/nav/site-header.tsx).
 const TABS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "홈", icon: Home },
   { href: "/clubs", label: "동아리", icon: Compass },

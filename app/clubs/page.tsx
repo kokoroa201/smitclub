@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { ClubListCard, ClubListPlaceholderCard, type ClubListItem } from "@/components/clubs/club-list-card";
 
@@ -91,6 +91,25 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
           </p>
         </div>
       </section>
+
+      {/* 동아리 안내(개설 절차·운영규정·표준 회칙) 진입 카드 — 로그인 여부와
+          무관하게 누구나 볼 수 있는 /club-rules로 바로 연결한다. 목록을
+          방해하지 않도록 가로 한 줄짜리 카드 하나로 좁게 둔다. */}
+      <Link
+        href="/club-rules"
+        className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-white px-4 py-3 transition-colors hover:bg-muted/50 sm:mt-5"
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-foreground">동아리를 직접 만들고 싶다면?</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
+            개설 절차와 운영규정·표준 동아리 회칙을 먼저 확인하세요.
+          </p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-coral-soft px-3 py-1.5 text-xs font-bold text-coral-dark sm:text-sm">
+          동아리 안내 보기
+          <ArrowRight className="h-3.5 w-3.5" />
+        </span>
+      </Link>
 
       {/* 상태 탭 */}
       <div className="mt-5 flex gap-2 sm:mt-6">

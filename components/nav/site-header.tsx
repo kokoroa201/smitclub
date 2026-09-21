@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, Compass, Home, Newspaper, UserRound } from "lucide-react";
+import { Bell, Compass, FileText, Home, Newspaper, UserRound } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/auth";
 import { AccessibilityControls } from "@/components/nav/accessibility-controls";
@@ -7,6 +7,7 @@ import { AccessibilityControls } from "@/components/nav/accessibility-controls";
 const NAV_LINKS = [
   { href: "/", label: "홈", icon: Home },
   { href: "/clubs", label: "동아리", icon: Compass },
+  { href: "/club-rules", label: "동아리 안내", icon: FileText },
   { href: "/news", label: "소식", icon: Newspaper },
   { href: "/my", label: "MY", icon: UserRound },
 ];
@@ -36,13 +37,16 @@ export function SiteHeader({
           </Link>
 
           <nav className="hidden items-center gap-0.5 whitespace-nowrap md:flex lg:gap-1" aria-label="주요 메뉴">
+            {/* 항목이 5개(+MAKE)로 늘어난 뒤에도 768px(md)에서 한 줄을
+                유지하도록, md 구간에서는 아이콘을 숨기고 텍스트만 좁은
+                패딩으로 보여준다 — 여유 있는 lg(1024px+)부터 아이콘을 되살린다. */}
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:gap-1.5 lg:px-4 lg:py-2 lg:text-sm"
+                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:gap-1.5 lg:px-4 lg:py-2 lg:text-sm"
               >
-                <link.icon className="h-4 w-4 shrink-0" />
+                <link.icon className="hidden h-4 w-4 shrink-0 lg:block" />
                 {link.label}
               </Link>
             ))}

@@ -7,6 +7,10 @@ export function SiteFooter() {
         © 2026 SMIT CLUB · 서울미디어대학원대학교 원우회
       </p>
       <p className="mt-1 hidden text-[11px] text-muted-foreground/60 sm:block">
+        <Link href="/club-rules" className="hover:text-muted-foreground">
+          동아리 운영규정 · 표준 동아리 회칙
+        </Link>
+        <span className="mx-1.5">·</span>
         <Link href="/terms" className="hover:text-muted-foreground">
           이용약관
         </Link>
