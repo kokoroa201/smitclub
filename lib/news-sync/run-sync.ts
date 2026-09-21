@@ -5,11 +5,13 @@ import { scrapeAcademicCalendar } from "./scrape-calendar";
 export type SyncTargetResult = { status: "success" | "error"; fetchedCount: number; error?: string };
 export type SyncSummary = { notices: SyncTargetResult; calendar: SyncTargetResult };
 
-// 학교 학사공지/학사일정을 하루 1회 가져와 upsert한다(app/api/cron/sync-news
-// 에서만 호출). 실패해도 기존 데이터는 절대 지우지 않는다 — insert/upsert만
-// 하고 delete는 어디에도 없다. 각 대상(공지/일정)은 서로 독립적으로 성공·
-// 실패하며, 결과는 news_sync_runs에 기록해 관리자 화면에서 확인할 수 있게
-// 한다. 재시도는 하지 않는다(다음 날 배치가 다시 시도).
+// 학교 학사공지/학사일정을 하루 2회(KST 09:00·13:00) 가져와 upsert한다
+// (app/api/cron/sync-news에서만 호출, /admin/notices의 "지금 동기화" 버튼도
+// 동일 함수를 즉시 호출한다). 실패해도 기존 데이터는 절대 지우지 않는다 —
+// insert/upsert만 하고 delete는 어디에도 없다. 각 대상(공지/일정)은 서로
+// 독립적으로 성공·실패하며, 결과는 news_sync_runs에 기록해 관리자 화면에서
+// 확인할 수 있게 한다. 실패한 회차를 별도로 재시도하지는 않는다(다음
+// 예정된 배치가 다시 시도).
 export async function runNewsSync(): Promise<SyncSummary> {
   const admin = createAdminClient();
   if (!admin) {
