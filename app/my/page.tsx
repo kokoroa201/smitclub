@@ -10,6 +10,7 @@ import { ClubStatusBadge, APPLICATION_STATUS_LABEL, MembershipStatusBadge } from
 import { CATEGORY_ICON, CATEGORY_TONE } from "@/lib/constants/category-icons";
 import { CLUB_CATEGORIES } from "@/lib/constants/categories";
 import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
+import { ROLE_LABEL } from "@/lib/constants/roles";
 
 // 0009 이전 가입자는 학과·전공을 고정 목록 대신 자유 입력(profile_private.
 // affiliation, 예: "미디어비즈니스학과")으로 받았다. department가 아직
@@ -42,15 +43,6 @@ const STATUS_STYLE: Record<string, { wash: string; solid: string; icon: LucideIc
   recommended: { wash: "bg-blue-soft/60", solid: "bg-blue-dark", icon: ThumbsUp },
   approved: { wash: "bg-mint-soft/70", solid: "bg-mint-dark", icon: BadgeCheck },
   rejected: { wash: "bg-coral-soft/60", solid: "bg-coral-dark", icon: XCircle },
-};
-
-const ROLE_LABEL: Record<string, string> = {
-  student: "학생",
-  club_admin: "동아리장",
-  super_admin: "관리자",
-  council_president: "원우회장",
-  council_vice_president: "원우회 부회장",
-  academic_staff: "교학처 담당자",
 };
 
 type PrivateProfileRow = {

@@ -2,15 +2,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { updateMemberRole } from "@/lib/actions/admin-members";
-
-const ROLE_LABEL: Record<string, string> = {
-  student: "학생",
-  club_admin: "동아리장",
-  super_admin: "관리자",
-  council_president: "원우회장",
-  council_vice_president: "원우회 부회장",
-  academic_staff: "교학처 담당자",
-};
+import { ROLE_LABEL } from "@/lib/constants/roles";
 
 const ROLE_BADGE: Record<string, string> = {
   student: "bg-muted text-muted-foreground",
