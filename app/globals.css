@@ -44,6 +44,23 @@
   --card-radius: 1.5rem;
 }
 
+/* Samsung Internet은 color-scheme: only light를 무시하고 OS 다크모드에서
+   페이지에 강제 다크를 입히지만, 사이트가 prefers-color-scheme: dark를 직접
+   처리하면 강제 다크를 건너뛴다. 그래서 다크에서도 위 라이트 토큰을 그대로
+   다시 선언해 항상 라이트로 고정한다 — 값은 반드시 :root와 같게 유지할 것. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: only light;
+    --bg: #fffaf6;
+    --fg: #221c2b;
+    --card-bg: #ffffff;
+    --card-fg: #221c2b;
+    --muted-bg: #f5f1f9;
+    --muted-fg: #6e6580;
+    --border-c: #eee4f5;
+  }
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
