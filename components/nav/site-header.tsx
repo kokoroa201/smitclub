@@ -99,7 +99,7 @@ export function SiteHeader({
                 </Link>
                 <Link
                   href="/signup"
-                  className="shrink-0 whitespace-nowrap rounded-full bg-coral px-2.5 py-1 font-bold text-white shadow-sm shadow-coral/30 lg:px-4 lg:py-1.5"
+                  className="shrink-0 whitespace-nowrap rounded-full bg-white px-2.5 py-1 font-bold text-coral-ink ring-1 ring-inset ring-coral/40 transition-colors hover:bg-coral-soft/50 lg:px-4 lg:py-1.5"
                 >
                   회원가입
                 </Link>

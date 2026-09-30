@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { PageHero } from "@/components/common/page-hero";
 import { CLUB_RULE_DOCS, clubRuleFileHref, type ClubRuleDocKey } from "@/lib/constants/club-rules-documents";
@@ -8,6 +9,26 @@ import { APPLICATION_STEPS, ELIGIBILITY_ITEMS, PROCESSING_TIMELINE } from "@/lib
 // 재사용한다: 크림(yellow-soft) · 하늘색(blue-soft) · 라벤더(purple-soft) ·
 // 민트(mint-soft) · 피치·블러시(coral-soft).
 const PROCEDURE_CARD_TONES = ["bg-yellow-soft", "bg-blue-soft", "bg-purple-soft", "bg-mint-soft", "bg-coral-soft"];
+
+// 설명 전체가 아니라 핵심 구절(emphasis)만 굵게 — 구절 순서대로 잘라
+// 나머지는 일반 텍스트로 둔다. 구절이 설명에 없으면 그냥 건너뛴다.
+function highlight(text: string, phrases: readonly string[]) {
+  const parts: ReactNode[] = [];
+  let rest = text;
+  for (const phrase of phrases) {
+    const at = rest.indexOf(phrase);
+    if (at === -1) continue;
+    parts.push(rest.slice(0, at));
+    parts.push(
+      <strong key={phrase} className="font-semibold text-navy">
+        {phrase}
+      </strong>,
+    );
+    rest = rest.slice(at + phrase.length);
+  }
+  parts.push(rest);
+  return parts;
+}
 
 // 로그인 여부와 무관하게 누구나 열람할 수 있는 공개 페이지 — RootLayout이
 // profile이 없어도 헤더/푸터를 그대로 렌더링하므로 여기서 별도 인증 검사를
@@ -51,11 +72,13 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
 
         {/* 모바일 카드 패딩만 좁힌다(세로 16px·가로 20px) — 태블릿(sm)부터는
             기존 설계 그대로 p-5(20px 균등)를 유지한다. */}
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-5 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:mt-5 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {APPLICATION_STEPS.map((step, index) => (
-            <div key={step.title} className={`rounded-xl px-5 py-4 sm:p-5 ${PROCEDURE_CARD_TONES[index]}`}>
+            <div key={step.title} className={`rounded-xl px-5 py-3 sm:p-5 ${PROCEDURE_CARD_TONES[index]}`}>
               <p className="text-sm font-bold text-navy sm:text-base">{step.title}</p>
-              <p className="mt-1 text-sm text-navy/70 sm:mt-1.5 sm:leading-relaxed">{step.description}</p>
+              <p className="mt-0.5 text-[13px] leading-[1.55] text-navy/70 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
+                {highlight(step.description, step.emphasis)}
+              </p>
             </div>
           ))}
         </div>
@@ -91,7 +114,7 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
 
         <Link
           href="/clubs/new"
-          className="mt-5 inline-flex w-fit items-center justify-center rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-coral-dark"
+          className="mt-5 inline-flex w-fit items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-bold text-coral-ink ring-1 ring-inset ring-coral-dark transition-colors hover:bg-coral-soft/50"
         >
           온라인으로 동아리 개설 신청하기
         </Link>
@@ -110,7 +133,7 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
                 scroll={false}
                 className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
                   activeKey === doc.key
-                    ? "bg-coral text-white"
+                    ? "bg-coral-soft/50 text-coral-ink"
                     : "border border-border bg-white text-muted-foreground hover:bg-muted"
                 }`}
               >
@@ -127,7 +150,7 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
               <a
                 href={pdfHref}
                 download={`${activeDoc.baseName}.pdf`}
-                className="rounded-full bg-coral px-3.5 py-1.5 text-sm font-bold text-white transition-colors hover:bg-coral-dark"
+                className="rounded-full bg-coral-soft/50 px-3.5 py-1.5 text-sm font-bold text-coral-ink transition-colors hover:bg-coral-soft/80"
               >
                 PDF 다운로드
               </a>

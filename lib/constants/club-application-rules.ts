@@ -12,27 +12,33 @@ export const APPLICATION_MONTHS = Array.from({ length: 12 }, (_, i) => String(i 
 
 // 동아리 개설 절차 안내(5단계) — 온라인 신청으로 전환하면서 별도 "서식 작성"
 // 단계 없이 온라인 신청서 제출로 서식 내용을 대체한다. 공개 안내 페이지인
-// /club-rules 맨 위에서 펼쳐진 상태로 보여준다.
+// /club-rules 맨 위에서 펼쳐진 상태로 보여준다. emphasis는 description 안에
+// 글자 그대로 들어 있는 핵심 구절로, 카드에서 그 부분만 굵게 표시한다.
 export const APPLICATION_STEPS = [
   {
     title: "아이디어 구체화",
     description: "동아리의 목적·활동 분야·구성원 계획을 세웁니다.",
+    emphasis: ["목적·활동 분야·구성원 계획"],
   },
   {
     title: "온라인 신청",
     description: "신청 폼을 작성해 제출합니다. 최소 5인 이상, 한국인·외국인 각 1인 이상이 필요합니다.",
+    emphasis: ["최소 5인 이상", "한국인·외국인 각 1인 이상"],
   },
   {
     title: "원우회 검토",
     description: "원우회가 신청서를 검토하고 지도교수 확인을 진행합니다.",
+    emphasis: ["지도교수 확인"],
   },
   {
     title: "교학팀 협의",
     description: "원우회와 교학팀이 최종 협의하여 동아리 등록을 확정합니다.",
+    emphasis: ["동아리 등록을 확정"],
   },
   {
     title: "최종 승인 및 활동 시작",
     description: "승인 후 동아리 등록을 마치고 공식 활동을 시작합니다.",
+    emphasis: ["공식 활동을 시작"],
   },
 ] as const;
 

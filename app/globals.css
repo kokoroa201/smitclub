@@ -18,6 +18,9 @@
   --brand-coral: #ff6b5b;
   --brand-coral-dark: #e34f3f;
   --brand-coral-soft: #ffe3dd;
+  /* 흰/연한 배경 위 코랄 "텍스트" 전용 — coral(2.8:1)·coral-dark(3.9:1)는
+     작은 글자 대비(4.5:1)에 못 미친다. 흰 배경 5.3:1, coral-soft/50 위 4.8:1. */
+  --brand-coral-ink: #c4382a;
   --brand-peach: #ffb199;
 
   --brand-navy: #16234a;
@@ -53,6 +56,7 @@
   --color-coral: var(--brand-coral);
   --color-coral-dark: var(--brand-coral-dark);
   --color-coral-soft: var(--brand-coral-soft);
+  --color-coral-ink: var(--brand-coral-ink);
   --color-peach: var(--brand-peach);
 
   --color-navy: var(--brand-navy);

@@ -38,7 +38,7 @@ export function BottomNav() {
         <Link
           href="/clubs/new"
           aria-label="동아리 만들기"
-          className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-7 items-center justify-center rounded-full bg-gradient-to-br from-coral to-coral-dark text-white shadow-lg shadow-coral/40 ring-4 ring-background transition-transform hover:scale-105"
+          className="absolute left-1/2 top-0 flex h-14 w-14 -translate-x-1/2 -translate-y-6 items-center justify-center rounded-full bg-gradient-to-br from-coral to-coral-dark text-white shadow-md shadow-coral/40 ring-[3px] ring-background transition-transform hover:scale-105"
         >
           <span className="text-xs font-extrabold tracking-wide">MAKE</span>
         </Link>
