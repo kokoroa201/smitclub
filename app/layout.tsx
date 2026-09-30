@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { pretendard } from "./fonts";
@@ -11,6 +11,13 @@ import { SiteFooter } from "@/components/nav/site-footer";
 export const metadata: Metadata = {
   title: "SMIT CLUB",
   description: "SMIT 대학원 동아리 포털",
+};
+
+// <meta name="color-scheme" content="only light"> — CSS의 color-scheme보다
+// 먼저 읽혀 첫 페인트부터 라이트로 고정되고, 브라우저 주소창 색도 맞춘다.
+export const viewport: Viewport = {
+  colorScheme: "only light",
+  themeColor: "#fffaf6",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
+/* 항상 라이트 테마로 고정한다 — OS 다크모드에서도 배경·글자색을 바꾸지 않고,
+   "only light"로 브라우저 자동 다크(Android Chrome 등)와 폼 컨트롤·스크롤바의
+   다크 렌더링도 막는다. 다크 테마를 다시 도입하려면 카드별 bg-white 등
+   하드코딩된 라이트 색부터 토큰으로 옮겨야 한다. */
 :root {
+  color-scheme: only light;
   --bg: #fffaf6;
   --fg: #221c2b;
   --card-bg: #ffffff;
@@ -82,18 +87,6 @@
   .certificate-print-page {
     border-color: #000 !important;
     box-shadow: none !important;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #17131d;
-    --fg: #f3eef9;
-    --card-bg: #211c29;
-    --card-fg: #f3eef9;
-    --muted-bg: #2a2433;
-    --muted-fg: #a89bbd;
-    --border-c: #362f42;
   }
 }
 
