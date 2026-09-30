@@ -121,7 +121,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
         </div>
       </section>
 
-      <div className="mt-5 flex gap-2 sm:mt-6">
+      <div className="mt-4 flex gap-2 sm:mt-6">
         <Link
           href="/news?tab=notice"
           className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
@@ -142,7 +142,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
 
       {tab === "notice" ? (
         <>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-3 flex gap-2 sm:mt-4">
             {SOURCE_FILTERS.map((f) => (
               <Link
                 key={f.key}
@@ -156,42 +156,59 @@ export default async function NewsPage(props: PageProps<"/news">) {
             ))}
           </div>
 
-          <div className="mt-4 flex flex-col gap-2">
+          {/* 모바일은 한 화면에 더 많이 훑어볼 수 있는 compact list — 제목은
+              크기 대신 굵기로 위계를 주고 2줄까지만, 요약은 1줄. sm: 이상과
+              큰 글씨 모드(in-data-[font-size=large])는 기존 카드 크기 그대로. */}
+          <div className="mt-3 flex flex-col gap-1.5 sm:mt-4 sm:gap-2 in-data-[font-size=large]:gap-2">
             {notices.length === 0 && (
               <p className="py-10 text-center text-sm text-muted-foreground">등록된 공지가 없습니다.</p>
             )}
             {notices.map((notice) => {
               const style = NOTICE_SOURCE_STYLE[notice.source];
               const isAcademic = notice.source === "school_academic";
+              // 같은 링크를 모바일(날짜 줄 오른쪽)과 sm:/큰 글씨 모드(아래 별도
+              // 행) 두 곳에 그린다 — 목적지·동작이 어긋나지 않도록 한 곳에서 만든다.
+              const renderLink = (className: string) =>
+                isAcademic ? (
+                  notice.source_url && (
+                    <a href={notice.source_url} target="_blank" rel="noopener noreferrer nofollow" className={className}>
+                      원문 보기 →
+                    </a>
+                  )
+                ) : (
+                  <Link href={`/news/${notice.id}`} className={className}>
+                    자세히 보기 →
+                  </Link>
+                );
               return (
-                <div key={notice.id} className="rounded-xl border border-border bg-white p-4">
-                  <div className="flex items-center justify-between gap-2">
+                <div
+                  key={notice.id}
+                  className="rounded-xl border border-border bg-white px-4 py-2.5 sm:p-4 in-data-[font-size=large]:p-4"
+                >
+                  <div className="flex items-center gap-2">
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${style.className}`}>
                       {style.label}
                     </span>
-                    <span className="text-xs text-muted-foreground">{formatDate(notice.published_at)}</span>
-                  </div>
-                  <p className="mt-2 font-bold text-foreground">{notice.title}</p>
-                  {notice.summary && (
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{notice.summary}</p>
-                  )}
-                  <div className="mt-2">
-                    {isAcademic ? (
-                      notice.source_url && (
-                        <a
-                          href={notice.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer nofollow"
-                          className="text-sm font-semibold text-coral-dark hover:underline"
-                        >
-                          원문 보기 →
-                        </a>
-                      )
-                    ) : (
-                      <Link href={`/news/${notice.id}`} className="text-sm font-semibold text-coral-dark hover:underline">
-                        자세히 보기 →
-                      </Link>
+                    <span className="text-[0.6875rem] text-muted-foreground sm:text-xs in-data-[font-size=large]:ml-auto in-data-[font-size=large]:text-xs">
+                      {formatDate(notice.published_at)}
+                    </span>
+                    {/* 모바일·데스크톱 공통(큰 글씨 모드 제외) — 날짜 줄 오른쪽 끝.
+                        음수 마진+패딩으로 터치 영역을 36px 높이로 넓히되 날짜 줄
+                        높이는 늘리지 않는다. */}
+                    {renderLink(
+                      "-my-2 -mr-2 ml-auto inline-flex min-h-9 shrink-0 items-center px-2 text-xs font-semibold text-coral-dark hover:underline sm:text-sm in-data-[font-size=large]:hidden",
                     )}
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[0.8125rem] font-semibold leading-snug text-foreground sm:mt-2 sm:line-clamp-none sm:text-base sm:font-bold sm:leading-normal in-data-[font-size=large]:mt-2 in-data-[font-size=large]:text-base in-data-[font-size=large]:font-bold in-data-[font-size=large]:leading-normal">
+                    {notice.title}
+                  </p>
+                  {notice.summary && (
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground sm:mt-1 sm:line-clamp-2 sm:text-sm in-data-[font-size=large]:mt-1 in-data-[font-size=large]:line-clamp-2 in-data-[font-size=large]:text-sm">
+                      {notice.summary}
+                    </p>
+                  )}
+                  <div className="mt-2 hidden in-data-[font-size=large]:block">
+                    {renderLink("text-sm font-semibold text-coral-dark hover:underline")}
                   </div>
                 </div>
               );

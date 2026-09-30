@@ -97,7 +97,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
           방해하지 않도록 가로 한 줄짜리 카드 하나로 좁게 둔다. */}
       <Link
         href="/club-rules"
-        className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-white px-4 py-3 transition-colors hover:bg-muted/50 sm:mt-5"
+        className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-white px-4 py-2.5 transition-colors hover:bg-muted/50 sm:mt-5 sm:py-3 in-data-[font-size=large]:py-3"
       >
         <div className="min-w-0">
           <p className="text-sm font-bold text-foreground">동아리를 직접 만들고 싶다면?</p>
@@ -105,14 +105,14 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
             개설 절차와 운영규정·표준 동아리 회칙을 먼저 확인하세요.
           </p>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-coral-soft px-3 py-1.5 text-xs font-bold text-coral-dark sm:text-sm">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-coral-soft px-2.5 py-1 text-xs font-bold text-coral-dark sm:px-3 sm:py-1.5 sm:text-sm in-data-[font-size=large]:px-3 in-data-[font-size=large]:py-1.5">
           동아리 안내 보기
           <ArrowRight className="h-3.5 w-3.5" />
         </span>
       </Link>
 
       {/* 상태 탭 */}
-      <div className="mt-5 flex gap-2 sm:mt-6">
+      <div className="mt-4 flex gap-2 sm:mt-6">
         {STATUS_TABS.map((tab) => {
           const active = statusFilter === tab.key;
           const href = tab.key === "all" ? "/clubs" : `/clubs?status=${tab.key}`;
@@ -138,7 +138,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
           <p className="text-sm text-muted-foreground">{EMPTY_MESSAGE[statusFilter]}</p>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:mt-8 sm:grid-cols-2 sm:gap-6">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-6">
           {clubs.map((club) => (
             <ClubListCard key={club.slug} club={club} />
           ))}

@@ -32,10 +32,10 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white shadow-sm shadow-black/5">
       <div className={`h-[5px] sm:h-1.5 ${accent.strip}`} />
 
-      <div className="flex flex-1 flex-col gap-3 px-5 pb-4 pt-5 sm:gap-4 sm:px-6 sm:pb-5 sm:pt-6">
+      <div className="flex flex-1 flex-col gap-2 px-5 pb-3.5 pt-4 sm:gap-4 sm:px-6 sm:pb-5 sm:pt-6 in-data-[font-size=large]:gap-3 in-data-[font-size=large]:pb-4 in-data-[font-size=large]:pt-5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
-            <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full sm:h-12 sm:w-12 ${accent.icon}`}>
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full sm:h-12 sm:w-12 in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-11 ${accent.icon}`}>
               <CategoryIcon className="h-5 w-5" strokeWidth={2} />
             </span>
             <div className="min-w-0">
@@ -52,7 +52,7 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
         </div>
 
         {club.description && (
-          <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p className="line-clamp-2 text-[0.8125rem] leading-normal text-muted-foreground sm:text-base sm:leading-relaxed in-data-[font-size=large]:text-sm in-data-[font-size=large]:leading-relaxed">
             {club.description}
           </p>
         )}
@@ -67,23 +67,23 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
           </div>
         )}
 
-        <div className="mt-auto flex flex-row gap-2 pt-1.5">
+        <div className="mt-auto flex flex-row justify-center gap-4 pt-1 sm:gap-2 sm:pt-1.5 in-data-[font-size=large]:gap-2 in-data-[font-size=large]:pt-1.5">
           <Link
             href={`/clubs/${club.slug}`}
-            className="flex h-11 flex-1 items-center justify-center rounded-full border border-purple/40 bg-white px-4 text-sm font-semibold text-foreground transition-colors hover:bg-purple-soft/40 sm:h-10"
+            className="flex h-9 w-[6.875rem] flex-none items-center justify-center rounded-full border border-purple/40 bg-white px-4 text-[0.8125rem] font-semibold text-foreground transition-colors hover:bg-purple-soft/40 sm:h-10 sm:w-auto sm:flex-1 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-auto in-data-[font-size=large]:flex-1 in-data-[font-size=large]:text-sm"
           >
             둘러보기
           </Link>
           {isRecruiting ? (
             <Link
               href={`/clubs/${club.slug}/join`}
-              className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-navy px-4 text-sm font-semibold text-white transition-opacity hover:opacity-85 sm:h-10"
+              className="flex h-9 w-[8.125rem] flex-none items-center justify-center gap-1.5 rounded-full bg-navy px-4 text-[0.8125rem] font-semibold text-white transition-opacity hover:opacity-85 sm:h-10 sm:w-auto sm:flex-1 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-auto in-data-[font-size=large]:flex-1 in-data-[font-size=large]:text-sm"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 in-data-[font-size=large]:h-4 in-data-[font-size=large]:w-4" />
               가입 신청
             </Link>
           ) : (
-            <span className="flex h-11 flex-1 cursor-not-allowed items-center justify-center rounded-full bg-muted px-4 text-sm font-semibold text-muted-foreground sm:h-10">
+            <span className="flex h-9 w-[8.125rem] flex-none cursor-not-allowed items-center justify-center rounded-full bg-muted px-4 text-[0.8125rem] font-semibold text-muted-foreground sm:h-10 sm:w-auto sm:flex-1 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-auto in-data-[font-size=large]:flex-1 in-data-[font-size=large]:text-sm">
               모집 준비 중
             </span>
           )}
@@ -109,7 +109,7 @@ const PLACEHOLDER_ICONS: { Icon: typeof Sparkles; tone: string }[] = [
 // 신청 CTA만 담는다.
 export function ClubListPlaceholderCard() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-purple/30 bg-purple-soft/20 p-8 text-center sm:gap-4 sm:p-10">
+    <div className="flex h-full flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed border-purple/30 bg-purple-soft/20 px-8 py-5 text-center sm:gap-4 sm:p-10 in-data-[font-size=large]:gap-3 in-data-[font-size=large]:py-8">
       <div className="flex flex-wrap items-center justify-center gap-2">
         {PLACEHOLDER_ICONS.map(({ Icon, tone }, i) => (
           <span
@@ -123,9 +123,9 @@ export function ClubListPlaceholderCard() {
       <p className="text-sm font-bold text-foreground sm:text-base">다음 동아리를 기다리고 있어요</p>
       <Link
         href="/clubs/new"
-        className="flex h-11 items-center gap-1.5 rounded-full bg-coral px-5 text-sm font-semibold text-white transition-colors hover:bg-coral-dark sm:h-10"
+        className="flex w-fit items-center gap-1 rounded-full bg-coral px-4 py-1.5 text-[0.8125rem] font-semibold leading-5 text-white transition-colors hover:bg-coral-dark sm:h-10 sm:gap-1.5 sm:px-5 sm:py-0 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:gap-1.5 in-data-[font-size=large]:px-5 in-data-[font-size=large]:py-0 in-data-[font-size=large]:text-sm"
       >
-        <Plus className="h-4 w-4" />
+        <Plus className="h-[0.8125rem] w-[0.8125rem] sm:h-4 sm:w-4 in-data-[font-size=large]:h-4 in-data-[font-size=large]:w-4" />
         동아리 개설 신청
       </Link>
     </div>
