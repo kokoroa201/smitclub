@@ -50,6 +50,14 @@ export async function scrapeNoticeList(): Promise<ScrapedNoticeListItem[]> {
     });
   });
 
+  // 0건은 정상일 수 없다(고정 공지만 해도 여러 건) — 사이트 구조 변경이나
+  // 해외 IP 차단으로 다른 페이지를 받은 경우다. "성공 0건"으로 기록되면
+  // 문제가 묻히므로, 받은 페이지의 단서를 담아 에러로 올린다.
+  if (items.length === 0) {
+    const pageTitle = $("title").first().text().trim() || "(제목 없음)";
+    throw new Error(`학사공지 목록을 찾지 못함 — 응답 ${html.length}바이트, 페이지 제목 "${pageTitle}"`);
+  }
+
   return items;
 }
 

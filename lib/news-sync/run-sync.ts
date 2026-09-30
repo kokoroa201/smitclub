@@ -26,6 +26,7 @@ export async function runNewsSync(): Promise<SyncSummary> {
   try {
     const list = await scrapeNoticeList();
     let upserted = 0;
+    let firstError: string | undefined;
 
     for (const item of list) {
       const summaryText = await scrapeNoticeSummary(item.sourceUrl);
@@ -40,8 +41,12 @@ export async function runNewsSync(): Promise<SyncSummary> {
         },
         { onConflict: "source,external_id" },
       );
-      if (!error) upserted += 1;
+      if (error) firstError ??= error.message;
+      else upserted += 1;
     }
+
+    // 개별 upsert 실패를 삼키면 "성공 0건"처럼 보여 원인을 알 수 없다.
+    if (upserted === 0 && firstError) throw new Error(`저장 실패: ${firstError}`);
 
     summary.notices = { status: "success", fetchedCount: upserted };
     await admin.from("news_sync_runs").insert({
@@ -63,6 +68,7 @@ export async function runNewsSync(): Promise<SyncSummary> {
   try {
     const { events, skipped } = await scrapeAcademicCalendar();
     let upserted = 0;
+    let firstError: string | undefined;
 
     for (const event of events) {
       const { error } = await admin.from("academic_calendar_events").upsert(
@@ -75,8 +81,11 @@ export async function runNewsSync(): Promise<SyncSummary> {
         },
         { onConflict: "external_id" },
       );
-      if (!error) upserted += 1;
+      if (error) firstError ??= error.message;
+      else upserted += 1;
     }
+
+    if (upserted === 0 && firstError) throw new Error(`저장 실패: ${firstError}`);
 
     summary.calendar = { status: "success", fetchedCount: upserted };
     await admin.from("news_sync_runs").insert({

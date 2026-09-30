@@ -133,5 +133,10 @@ export async function scrapeAcademicCalendar(): Promise<{ events: ScrapedCalenda
       });
   });
 
+  if (events.length === 0) {
+    const pageTitle = $("title").first().text().trim() || "(제목 없음)";
+    throw new Error(`학사일정을 찾지 못함 — 응답 ${html.length}바이트, 페이지 제목 "${pageTitle}"`);
+  }
+
   return { events, skipped };
 }
