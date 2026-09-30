@@ -80,10 +80,15 @@ export default async function Home() {
             <span className="inline-flex w-fit items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
               2026 동아리 시즌
             </span>
+            {/* 모바일은 항상 "학교생활," / "함께할 때 더 즐거워요" 2줄로 고정 —
+                둘째 줄은 nowrap이라 좁은 화면·큰 글씨 모드에서도 "즐거워/요"처럼
+                다시 갈라지지 않는다. */}
             <h1 className="text-xl leading-snug tracking-tight">
-              <span className="font-semibold text-slate-800">학교생활,</span>{" "}
-              <span className="font-bold text-coral-dark">함께할 때</span>{" "}
-              <span className="font-semibold text-slate-800">더 즐거워요</span>
+              <span className="block font-semibold text-slate-800">학교생활,</span>
+              <span className="block whitespace-nowrap">
+                <span className="font-bold text-coral-dark">함께할 때</span>{" "}
+                <span className="font-semibold text-slate-800">더 즐거워요</span>
+              </span>
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
               관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.

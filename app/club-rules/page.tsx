@@ -54,8 +54,8 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
         <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-5 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {APPLICATION_STEPS.map((step, index) => (
             <div key={step.title} className={`rounded-xl px-5 py-4 sm:p-5 ${PROCEDURE_CARD_TONES[index]}`}>
-              <p className="font-bold text-navy">{step.title}</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-navy/70">{step.description}</p>
+              <p className="text-sm font-bold text-navy sm:text-base">{step.title}</p>
+              <p className="mt-1 text-sm text-navy/70 sm:mt-1.5 sm:leading-relaxed">{step.description}</p>
             </div>
           ))}
         </div>
@@ -108,7 +108,7 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
                 key={doc.key}
                 href={`/club-rules?doc=${doc.key}`}
                 scroll={false}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
                   activeKey === doc.key
                     ? "bg-coral text-white"
                     : "border border-border bg-white text-muted-foreground hover:bg-muted"
@@ -120,7 +120,7 @@ export default async function ClubRulesPage(props: PageProps<"/club-rules">) {
           </div>
 
           <div className="mt-4 rounded-xl border border-border bg-white p-4 sm:p-6">
-            <h3 className="text-lg font-bold text-foreground">{activeDoc.label}</h3>
+            <h3 className="text-base font-bold text-foreground sm:text-lg">{activeDoc.label}</h3>
             <p className="mt-1 text-sm text-muted-foreground">{activeDoc.description}</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
