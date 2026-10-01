@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { CalendarDays, Sparkles } from "lucide-react";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
-import { categoryLabel, fill, getDictionary, type Locale } from "@/lib/i18n";
+import { clubName, categoryLabel, fill, getDictionary, type Locale } from "@/lib/i18n";
 
 export type ClubCardData = {
   slug: string;
   name: string;
+  nameEn: string | null;
   category: string;
   description: string | null;
   coverImageUrl: string | null;
@@ -50,7 +51,7 @@ export function ClubCard({ club, locale }: { club: ClubCardData; locale: Locale 
         <span className="w-fit rounded-full bg-coral-soft px-2 py-0.5 text-[11px] font-semibold text-coral-dark sm:px-2.5 sm:py-1 sm:text-xs">
           {categoryLabel(club.category, locale)}
         </span>
-        <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-2xl">{club.name}</h3>
+        <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-2xl">{clubName(club.name, club.nameEn, locale)}</h3>
         {club.description && (
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:line-clamp-3 sm:text-base">
             {club.description}
@@ -68,7 +69,7 @@ export function ClubCard({ club, locale }: { club: ClubCardData; locale: Locale 
             className="flex-1 rounded-full border border-border px-3 py-2 text-center text-xs font-semibold text-foreground transition-colors hover:bg-muted/50 sm:px-4 sm:py-2.5 sm:text-sm"
           >
             <span className="sm:hidden">{t.clubCard.explore}</span>
-            <span className="hidden sm:inline">{fill(t.clubCard.exploreClub, { name: club.name })}</span>
+            <span className="hidden sm:inline">{fill(t.clubCard.exploreClub, { name: clubName(club.name, club.nameEn, locale) })}</span>
           </Link>
           <Link
             href={`/clubs/${club.slug}`}

@@ -30,3 +30,7 @@ export function categoryLabel(category: string, locale: Locale = DEFAULT_LOCALE)
   const labels: Record<string, string> = getDictionary(locale).category;
   return labels[category] ?? category;
 }
+
+export function clubName(name: string, nameEn: string | null | undefined, locale: Locale): string {
+  return locale === "en" ? nameEn || name : name;
+}

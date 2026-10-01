@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowRight, Sparkles, Users } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { fill, getDictionary } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { ClubCard, type ClubCardData } from "@/components/clubs/club-card";
 import { ClubCardMini } from "@/components/clubs/club-card-mini";
@@ -17,6 +18,7 @@ const PINNED_CLUB_SLUG = "suda";
 function toClubCardData(club: {
   slug: string;
   name: string;
+  name_en: string | null;
   category: string;
   description: string | null;
   cover_image_url: string | null;
@@ -26,6 +28,7 @@ function toClubCardData(club: {
   return {
     slug: club.slug,
     name: club.name,
+    nameEn: club.name_en,
     category: club.category,
     description: club.description,
     coverImageUrl: club.cover_image_url,
@@ -42,13 +45,13 @@ async function getRecruitingClubs(): Promise<ClubCardData[]> {
     const [{ data }, { data: pinned }] = await Promise.all([
       supabase
         .from("clubs")
-        .select("slug, name, category, description, cover_image_url, meeting_day, meeting_location")
+        .select("slug, name, name_en, category, description, cover_image_url, meeting_day, meeting_location")
         .eq("status", "recruiting")
         .order("created_at", { ascending: false })
         .limit(5),
       supabase
         .from("clubs")
-        .select("slug, name, category, description, cover_image_url, meeting_day, meeting_location")
+        .select("slug, name, name_en, category, description, cover_image_url, meeting_day, meeting_location")
         .eq("slug", PINNED_CLUB_SLUG)
         .maybeSingle(),
     ]);
@@ -67,6 +70,7 @@ async function getRecruitingClubs(): Promise<ClubCardData[]> {
 
 export default async function Home() {
   const [clubs, locale] = await Promise.all([getRecruitingClubs(), getLocale()]);
+  const t = getDictionary(locale);
 
   return (
     <div className="flex flex-col">
@@ -79,20 +83,20 @@ export default async function Home() {
         <section className="px-4 pt-3">
           <div className="flex min-h-[140px] flex-col items-center justify-center gap-1.5 rounded-lg border border-border/50 bg-gradient-to-r from-coral-soft/50 to-white px-4 py-4 text-center">
             <span className="inline-flex w-fit items-center rounded-full bg-coral-soft px-2.5 py-0.5 text-[11px] font-semibold text-coral-dark">
-              2026 동아리 시즌
+              {t.home.season}
             </span>
-            {/* 모바일은 항상 "학교생활," / "함께할 때 더 즐거워요" 2줄로 고정 —
+            {/* 모바일 Hero는 언어와 무관하게 2줄로 고정 —
                 둘째 줄은 nowrap이라 좁은 화면·큰 글씨 모드에서도 "즐거워/요"처럼
                 다시 갈라지지 않는다. */}
             <h1 className="text-xl leading-snug tracking-tight">
-              <span className="block font-semibold text-slate-800">학교생활,</span>
+              <span className="block font-semibold text-slate-800">{t.home.heroStart}</span>
               <span className="block whitespace-nowrap">
-                <span className="font-bold text-coral-dark">함께할 때</span>{" "}
-                <span className="font-semibold text-slate-800">더 즐거워요</span>
+                <span className="font-bold text-coral-dark">{t.home.heroHighlight}</span>{" "}
+                <span className="font-semibold text-slate-800">{t.home.heroEnd}</span>
               </span>
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
+              {t.home.intro}
             </p>
           </div>
         </section>
@@ -104,15 +108,15 @@ export default async function Home() {
         <section className="px-4 pt-4 sm:pt-6">
           <div className="mx-auto flex min-h-[150px] max-w-6xl flex-col items-center justify-center gap-1.5 rounded-lg border border-border/50 bg-gradient-to-r from-coral-soft/50 to-white px-7 py-5 text-center lg:px-10">
             <span className="inline-flex w-fit items-center rounded-full bg-coral-soft px-3 py-1 text-xs font-semibold text-coral-dark">
-              2026 동아리 시즌
+              {t.home.season}
             </span>
             <h1 className="text-2xl leading-tight tracking-tight sm:whitespace-nowrap sm:text-3xl lg:text-4xl">
-              <span className="font-semibold text-slate-800">학교생활,</span>{" "}
-              <span className="font-bold text-coral-dark">함께할 때</span>{" "}
-              <span className="font-semibold text-slate-800">더 즐거워요</span>
+              <span className="font-semibold text-slate-800">{t.home.heroStart}</span>{" "}
+              <span className="font-bold text-coral-dark">{t.home.heroHighlight}</span>{" "}
+              <span className="font-semibold text-slate-800">{t.home.heroEnd}</span>
             </h1>
             <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-              관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.
+              {t.home.intro}
             </p>
           </div>
         </section>
@@ -123,16 +127,16 @@ export default async function Home() {
         <div className="flex items-end justify-between">
           <div>
             <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl lg:text-2xl">
-              지금 모집 중인 동아리
+              {t.home.recruiting}
             </h2>
             {clubs.length > 0 && (
               <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-                {clubs.length}개 동아리가 함께할 원우를 찾고 있어요.
+                {fill(clubs.length === 1 ? t.home.countOne : t.home.countMany, { count: String(clubs.length) })}
               </p>
             )}
           </div>
           <Link href="/clubs" className="text-xs font-semibold text-muted-foreground hover:text-foreground sm:text-sm">
-            전체보기
+            {t.newsPreview.viewAll}
           </Link>
         </div>
 
@@ -142,16 +146,16 @@ export default async function Home() {
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <h3 className="text-lg font-bold text-foreground">아직 모집 중인 동아리가 없어요</h3>
+              <h3 className="text-lg font-bold text-foreground">{t.home.emptyTitle}</h3>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                SMIT CLUB은 이제 막 시작했어요. 첫 동아리의 주인공이 되어보세요.
+                {t.home.emptyBody}
               </p>
             </div>
             <Link
               href="/clubs/new"
               className="inline-flex items-center gap-1.5 rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-coral/25 transition-colors hover:bg-coral-dark"
             >
-              동아리 만들기 <ArrowRight className="h-4 w-4" />
+              {t.nav.makeClub} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         ) : (
@@ -192,9 +196,9 @@ export default async function Home() {
             <Users className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-sm font-bold text-foreground">360명의 원우와 함께 시작하는 SMIT CLUB</p>
+            <p className="text-sm font-bold text-foreground">{t.home.community}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              내국인 101 · 외국인 259 · 2026 동아리 제도 시작
+              {t.home.stats}
             </p>
           </div>
         </div>

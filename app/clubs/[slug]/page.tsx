@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { categoryLabel } from "@/lib/i18n";
+import { categoryLabel, clubName, fill, getDictionary } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
@@ -31,6 +31,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
   const { slug } = await props.params;
   const cookieStore = await cookies();
   const locale = await getLocale();
+  const t = getDictionary(locale);
   const supabase = createClient(cookieStore);
 
   const { data: club } = await supabase
@@ -53,13 +54,13 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
   // 애초에 조회하지 않는다(위 select 목록 참고). 기존 동아리에 지도교수
   // 정보가 없을 수 있으므로(개편 이전 승인 건) 값이 없으면 항목 자체를 숨긴다.
   const advisorLabel = club.advisor_name
-    ? `${club.advisor_name} 교수${club.advisor_department ? ` · ${club.advisor_department}` : ""}`
+    ? `${fill(t.clubDetail.professor, { name: club.advisor_name })}${club.advisor_department ? ` · ${club.advisor_department}` : ""}`
     : null;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
       <Link href="/clubs" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
-        ← 동아리 목록으로
+        {t.clubDetail.back}
       </Link>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-border bg-white">
@@ -77,8 +78,8 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
                 {categoryLabel(club.category, locale)}
               </span>
               <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                {club.name}
-                {club.name_en && (
+                {clubName(club.name, club.name_en, locale)}
+                {locale === "ko" && club.name_en && (
                   <span className="ml-2 text-base font-medium text-muted-foreground">({club.name_en})</span>
                 )}
               </h1>
@@ -91,7 +92,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
               href={`/clubs/${club.slug}/join`}
               className="w-fit rounded-full bg-coral px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
             >
-              가입 신청
+              {t.clubCard.join}
             </Link>
           )}
 
@@ -111,7 +112,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
             {meetingInfo && (
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 shrink-0" />
-                <span>정기 모임 · {meetingInfo}</span>
+                <span>{t.clubDetail.meeting} · {meetingInfo}</span>
               </div>
             )}
             {club.meeting_location && (
@@ -120,11 +121,11 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
                 <span>{club.meeting_location}</span>
               </div>
             )}
-            {club.founded_year && <div>설립 연도 · {club.founded_year}</div>}
-            {advisorLabel && <div>지도교수 &nbsp; {advisorLabel}</div>}
+            {club.founded_year && <div>{t.clubDetail.founded} · {club.founded_year}</div>}
+            {advisorLabel && <div>{t.clubDetail.advisor} &nbsp; {advisorLabel}</div>}
             {club.sns_url && (
               <div>
-                SNS ·{" "}
+                {t.clubDetail.social} ·{" "}
                 <a
                   href={club.sns_url}
                   target="_blank"
@@ -139,7 +140,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
 
           {club.recruiting_post && (
             <div className="border-t border-border pt-4">
-              <h2 className="text-sm font-bold text-foreground">모집 안내</h2>
+              <h2 className="text-sm font-bold text-foreground">{t.clubDetail.recruitment}</h2>
               <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                 {club.recruiting_post}
               </p>

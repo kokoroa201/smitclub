@@ -1,8 +1,49 @@
 // 한국어 사전이 기준이다 — Dictionary 타입이 이 객체 모양에서 나오므로,
 // 여기 키를 추가하면 en.ts에도 같은 키를 넣기 전까지 tsc가 실패한다.
-// 페이지 문구는 단계적으로 옮긴다(현재는 상단 접근성 영역 + 공통 UI).
+// 페이지 문구는 단계적으로 옮긴다(공통 UI + 홈·동아리 목록·상세).
 // "{name}" 같은 자리표시자는 fill()로 채운다.
 export const ko = {
+  home: {
+    season: "2026 동아리 시즌",
+    heroStart: "학교생활,",
+    heroHighlight: "함께할 때",
+    heroEnd: "더 즐거워요",
+    intro: "관심사가 맞는 동아리를 찾거나, 새로운 동아리를 직접 시작해보세요.",
+    recruiting: "지금 모집 중인 동아리",
+    countOne: "{count}개 동아리가 함께할 원우를 찾고 있어요.",
+    countMany: "{count}개 동아리가 함께할 원우를 찾고 있어요.",
+    emptyTitle: "아직 모집 중인 동아리가 없어요",
+    emptyBody: "SMIT CLUB은 이제 막 시작했어요. 첫 동아리의 주인공이 되어보세요.",
+    community: "360명의 원우와 함께 시작하는 SMIT CLUB",
+    stats: "내국인 101 · 외국인 259 · 2026 동아리 제도 시작",
+  },
+  clubsPage: {
+    title: "나와 맞는 동아리를 찾아보세요",
+    intro: "관심사와 활동 목표에 맞는 동아리를 둘러보고, 마음에 드는 곳에 바로 가입 신청해보세요.",
+    guideTitle: "동아리를 직접 만들고 싶다면?",
+    guideBody: "개설 절차와 운영규정·표준 동아리 회칙을 먼저 확인하세요.",
+    guideCta: "동아리 안내 보기",
+    tabs: {
+      all: "전체",
+      recruiting: "모집 중",
+      active: "운영 중",
+    },
+    empty: {
+      all: "등록된 동아리가 없습니다.",
+      recruiting: "지금 모집 중인 동아리가 없습니다.",
+      active: "지금 운영 중인 동아리가 없습니다.",
+    },
+    missing: "원하는 동아리가 없나요?",
+  },
+  clubDetail: {
+    back: "← 동아리 목록으로",
+    meeting: "정기 모임",
+    founded: "설립 연도",
+    advisor: "지도교수",
+    professor: "{name} 교수",
+    social: "SNS",
+    recruitment: "모집 안내",
+  },
   accessibility: {
     korean: "한국어",
     english: "EN",

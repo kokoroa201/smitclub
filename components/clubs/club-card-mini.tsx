@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
 import type { ClubCardData } from "@/components/clubs/club-card";
-import { categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
+import { clubName, categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
 
 // 모바일 "지금 모집 중인 동아리" 가로 스크롤 목록 전용 카드. ClubCard(데스크톱
 // 그리드용)와 별개로, 175~185px 고정폭 + snap-scroll에 맞춘 축소 레이아웃.
@@ -42,7 +42,7 @@ export function ClubCardMini({ club, locale }: { club: ClubCardData; locale: Loc
         <span className="w-fit rounded-full bg-coral-soft px-1.5 py-0.5 text-[10px] font-semibold text-coral-dark">
           {categoryLabel(club.category, locale)}
         </span>
-        <h3 className="text-base font-bold tracking-tight text-foreground">{club.name}</h3>
+        <h3 className="text-base font-bold tracking-tight text-foreground">{clubName(club.name, club.nameEn, locale)}</h3>
         {club.description && (
           <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{club.description}</p>
         )}

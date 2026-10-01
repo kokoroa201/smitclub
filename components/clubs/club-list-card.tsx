@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Clapperboard, Coffee, Dumbbell, MessageCircle, Plus, Salad, Sparkles, UserPlus } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_ACCENT, DEFAULT_CATEGORY_ACCENT } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
-import { categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
+import { clubName, categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
 
 export type ClubListItem = {
   slug: string;
@@ -52,8 +52,8 @@ export function ClubListCard({ club, locale }: { club: ClubListItem; locale: Loc
             )}
             <div className="min-w-0">
               <h3 className="truncate text-lg font-bold tracking-tight text-foreground sm:text-xl">
-                {club.name}
-                {club.nameEn && <span className="ml-1.5 font-medium text-muted-foreground">({club.nameEn})</span>}
+                {clubName(club.name, club.nameEn, locale)}
+                {locale === "ko" && club.nameEn && <span className="ml-1.5 font-medium text-muted-foreground">({club.nameEn})</span>}
               </h3>
               <span className={`text-xs font-semibold sm:text-sm ${accent.text}`}>{categoryLabel(club.category, locale)}</span>
             </div>

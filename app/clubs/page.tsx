@@ -3,22 +3,13 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getDictionary } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { ClubListCard, ClubListPlaceholderCard, type ClubListItem } from "@/components/clubs/club-list-card";
 
-const STATUS_TABS = [
-  { key: "all", label: "전체" },
-  { key: "recruiting", label: "모집 중" },
-  { key: "active", label: "운영 중" },
-] as const;
+const STATUS_TABS = ["all", "recruiting", "active"] as const;
 
-type StatusFilter = (typeof STATUS_TABS)[number]["key"];
-
-const EMPTY_MESSAGE: Record<StatusFilter, string> = {
-  all: "등록된 동아리가 없습니다.",
-  recruiting: "지금 모집 중인 동아리가 없습니다.",
-  active: "지금 운영 중인 동아리가 없습니다.",
-};
+type StatusFilter = (typeof STATUS_TABS)[number];
 
 function toClubListItem(club: {
   slug: string;
@@ -45,7 +36,7 @@ function toClubListItem(club: {
 export default async function ClubsPage(props: PageProps<"/clubs">) {
   const searchParams = await props.searchParams;
   const statusParam = typeof searchParams.status === "string" ? searchParams.status : "all";
-  const statusFilter: StatusFilter = STATUS_TABS.some((tab) => tab.key === statusParam)
+  const statusFilter: StatusFilter = STATUS_TABS.some((tab) => tab === statusParam)
     ? (statusParam as StatusFilter)
     : "all";
 
@@ -64,6 +55,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
   const { data } = await query;
   const clubs = (data ?? []).map(toClubListItem);
   const locale = await getLocale();
+  const t = getDictionary(locale);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
@@ -88,10 +80,10 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
         <div className="absolute inset-y-0 left-0 w-[70%] bg-gradient-to-r from-white/95 via-white/60 to-transparent sm:w-[55%] sm:from-white/90 sm:via-white/40" />
         <div className="absolute inset-0 z-10 flex max-w-[62%] flex-col justify-center px-4 py-8 sm:max-w-[46%] sm:px-8 sm:py-14">
           <h1 className="text-lg font-extrabold leading-snug text-[#16234a] sm:text-2xl lg:text-3xl">
-            나와 맞는 동아리를 찾아보세요
+            {t.clubsPage.title}
           </h1>
           <p className="mt-1.5 text-xs leading-relaxed text-[#2f3b5c] sm:mt-2 sm:text-base">
-            관심사와 활동 목표에 맞는 동아리를 둘러보고, 마음에 드는 곳에 바로 가입 신청해보세요.
+            {t.clubsPage.intro}
           </p>
         </div>
       </section>
@@ -104,13 +96,13 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
         className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-white px-4 py-2.5 transition-colors hover:bg-muted/50 sm:mt-5 sm:py-3 in-data-[font-size=large]:py-3"
       >
         <div className="min-w-0">
-          <p className="text-sm font-bold text-foreground">동아리를 직접 만들고 싶다면?</p>
+          <p className="text-sm font-bold text-foreground">{t.clubsPage.guideTitle}</p>
           <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">
-            개설 절차와 운영규정·표준 동아리 회칙을 먼저 확인하세요.
+            {t.clubsPage.guideBody}
           </p>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-coral-soft px-2.5 py-1 text-xs font-bold text-coral-dark sm:px-3 sm:py-1.5 sm:text-sm in-data-[font-size=large]:px-3 in-data-[font-size=large]:py-1.5">
-          동아리 안내 보기
+          {t.clubsPage.guideCta}
           <ArrowRight className="h-3.5 w-3.5" />
         </span>
       </Link>
@@ -118,17 +110,17 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
       {/* 상태 탭 */}
       <div className="mt-4 flex gap-2 sm:mt-6">
         {STATUS_TABS.map((tab) => {
-          const active = statusFilter === tab.key;
-          const href = tab.key === "all" ? "/clubs" : `/clubs?status=${tab.key}`;
+          const active = statusFilter === tab;
+          const href = tab === "all" ? "/clubs" : `/clubs?status=${tab}`;
           return (
             <Link
-              key={tab.key}
+              key={tab}
               href={href}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
                 active ? "bg-coral text-white" : "border border-border text-muted-foreground hover:bg-muted"
               }`}
             >
-              {tab.label}
+              {t.clubsPage.tabs[tab]}
             </Link>
           );
         })}
@@ -139,7 +131,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-coral-soft text-coral-dark">
             <Sparkles className="h-4 w-4" />
           </span>
-          <p className="text-sm text-muted-foreground">{EMPTY_MESSAGE[statusFilter]}</p>
+          <p className="text-sm text-muted-foreground">{t.clubsPage.empty[statusFilter]}</p>
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-6">
@@ -152,12 +144,12 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
 
       {clubs.length !== 1 && (
         <div className="mt-8 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-6 text-center sm:mt-10 sm:flex-row sm:justify-between sm:text-left">
-          <p className="text-sm font-medium text-muted-foreground sm:text-base">원하는 동아리가 없나요?</p>
+          <p className="text-sm font-medium text-muted-foreground sm:text-base">{t.clubsPage.missing}</p>
           <Link
             href="/clubs/new"
             className="shrink-0 rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-coral-dark"
           >
-            동아리 개설 신청
+            {t.clubCard.createClub}
           </Link>
         </div>
       )}

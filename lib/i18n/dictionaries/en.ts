@@ -3,6 +3,47 @@ import type { Dictionary } from "./ko";
 // Dictionary(ko 기준) 타입을 명시해서 키가 빠지거나 남으면 tsc가 잡는다.
 // 직역보다 외국인 원우가 학교 사이트에서 바로 이해할 짧은 표현을 쓴다.
 export const en: Dictionary = {
+  home: {
+    season: "2026 Club Season",
+    heroStart: "Campus life,",
+    heroHighlight: "better",
+    heroEnd: "together",
+    intro: "Find your club or start something new.",
+    recruiting: "Clubs recruiting now",
+    countOne: "{count} club is looking for new members.",
+    countMany: "{count} clubs are looking for new members.",
+    emptyTitle: "No clubs recruiting yet",
+    emptyBody: "SMIT CLUB is just getting started. Start the first club!",
+    community: "SMIT CLUB starts with 360 students",
+    stats: "101 Korean · 259 international · Clubs launched in 2026",
+  },
+  clubsPage: {
+    title: "Find your club",
+    intro: "Explore your interests. Find a club and join.",
+    guideTitle: "Want to start a club?",
+    guideBody: "Read the steps and rules.",
+    guideCta: "Club Guide",
+    tabs: {
+      all: "All",
+      recruiting: "Recruiting",
+      active: "Active",
+    },
+    empty: {
+      all: "No clubs yet.",
+      recruiting: "No clubs are recruiting right now.",
+      active: "No active clubs right now.",
+    },
+    missing: "Can’t find your club?",
+  },
+  clubDetail: {
+    back: "← Back to clubs",
+    meeting: "Meetings",
+    founded: "Founded",
+    advisor: "Faculty advisor",
+    professor: "Prof. {name}",
+    social: "Social",
+    recruitment: "How to join",
+  },
   accessibility: {
     korean: "한국어",
     english: "EN",
