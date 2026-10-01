@@ -42,9 +42,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader profile={profile} unreadNotifications={unreadNotifications} locale={locale} />
         <div className="flex-1 pb-24 md:pb-0">
           {children}
-          <SiteFooter />
+          <SiteFooter locale={locale} />
         </div>
-        <BottomNav />
+        <BottomNav locale={locale} />
       </body>
     </html>
   );

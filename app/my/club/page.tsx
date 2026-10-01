@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { updateMyClub } from "@/lib/actions/club-admin";
 import { reviewMembership } from "@/lib/actions/club-memberships";
@@ -54,6 +55,7 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
   const success = searchParams.success === "1";
 
   const cookieStore = await cookies();
+  const locale = await getLocale();
   const supabase = createClient(cookieStore);
 
   const { data: club } = await supabase
@@ -183,7 +185,7 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
                   className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
                 >
                   <span className="text-foreground">{membership.profiles?.name ?? "알 수 없음"}</span>
-                  <MembershipStatusBadge status={membership.status} />
+                  <MembershipStatusBadge status={membership.status} locale={locale} />
                 </div>
               ))}
             </div>

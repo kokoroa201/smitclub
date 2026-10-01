@@ -1,51 +1,52 @@
-const APPLICATION_STATUS: Record<string, { label: string; className: string }> = {
-  draft: { label: "임시저장", className: "bg-muted text-muted-foreground" },
-  submitted: { label: "검토 대기", className: "bg-yellow-soft text-yellow-dark" },
-  needs_revision: { label: "보완 요청", className: "bg-purple-soft text-purple-dark" },
-  recommended: { label: "학교 승인 대기", className: "bg-blue-soft text-blue-dark" },
-  approved: { label: "승인", className: "bg-blue-soft text-blue-dark" },
-  rejected: { label: "반려", className: "bg-coral-soft text-coral-dark" },
+import { DEFAULT_LOCALE, getDictionary, type Locale } from "@/lib/i18n";
+
+// 상태 코드값(키)과 색은 여기서, 표시 라벨은 i18n 사전(status.*)에서 가져온다.
+// locale을 넘기지 않으면 한국어 — 관리자·공식 서식 화면은 한국어로 유지한다.
+const APPLICATION_STATUS_CLASS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground",
+  submitted: "bg-yellow-soft text-yellow-dark",
+  needs_revision: "bg-purple-soft text-purple-dark",
+  recommended: "bg-blue-soft text-blue-dark",
+  approved: "bg-blue-soft text-blue-dark",
+  rejected: "bg-coral-soft text-coral-dark",
 };
 
-const CLUB_STATUS: Record<string, { label: string; className: string }> = {
-  preparing: { label: "준비중", className: "bg-muted text-muted-foreground" },
-  recruiting: { label: "모집중", className: "bg-blue-soft text-blue-dark" },
-  active: { label: "활동중", className: "bg-purple-soft text-purple-dark" },
-  closed: { label: "종료", className: "bg-coral-soft text-coral-dark" },
+const CLUB_STATUS_CLASS: Record<string, string> = {
+  preparing: "bg-muted text-muted-foreground",
+  recruiting: "bg-blue-soft text-blue-dark",
+  active: "bg-purple-soft text-purple-dark",
+  closed: "bg-coral-soft text-coral-dark",
 };
 
-const MEMBERSHIP_STATUS: Record<string, { label: string; className: string }> = {
-  applied: { label: "신청 대기", className: "bg-yellow-soft text-yellow-dark" },
-  approved: { label: "승인", className: "bg-blue-soft text-blue-dark" },
-  rejected: { label: "거절", className: "bg-coral-soft text-coral-dark" },
-  left: { label: "탈퇴", className: "bg-muted text-muted-foreground" },
+const MEMBERSHIP_STATUS_CLASS: Record<string, string> = {
+  applied: "bg-yellow-soft text-yellow-dark",
+  approved: "bg-blue-soft text-blue-dark",
+  rejected: "bg-coral-soft text-coral-dark",
+  left: "bg-muted text-muted-foreground",
 };
 
-export function ApplicationStatusBadge({ status }: { status: string }) {
-  const entry = APPLICATION_STATUS[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${entry.className}`}>{entry.label}</span>
-  );
+const FALLBACK_CLASS = "bg-muted text-muted-foreground";
+
+function Badge({ label, className }: { label: string; className: string }) {
+  return <span className={`rounded-full px-3 py-1 text-xs font-bold ${className}`}>{label}</span>;
 }
 
-export function ClubStatusBadge({ status }: { status: string }) {
-  const entry = CLUB_STATUS[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${entry.className}`}>{entry.label}</span>
-  );
+export function ApplicationStatusBadge({ status, locale = DEFAULT_LOCALE }: { status: string; locale?: Locale }) {
+  const labels: Record<string, string> = getDictionary(locale).status.application;
+  return <Badge label={labels[status] ?? status} className={APPLICATION_STATUS_CLASS[status] ?? FALLBACK_CLASS} />;
 }
 
-export function MembershipStatusBadge({ status }: { status: string }) {
-  const entry = MEMBERSHIP_STATUS[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${entry.className}`}>{entry.label}</span>
-  );
+export function ClubStatusBadge({ status, locale = DEFAULT_LOCALE }: { status: string; locale?: Locale }) {
+  const labels: Record<string, string> = getDictionary(locale).status.club;
+  return <Badge label={labels[status] ?? status} className={CLUB_STATUS_CLASS[status] ?? FALLBACK_CLASS} />;
 }
 
-export const APPLICATION_STATUS_LABEL: Record<string, string> = Object.fromEntries(
-  Object.entries(APPLICATION_STATUS).map(([key, value]) => [key, value.label]),
-);
+export function MembershipStatusBadge({ status, locale = DEFAULT_LOCALE }: { status: string; locale?: Locale }) {
+  const labels: Record<string, string> = getDictionary(locale).status.membership;
+  return <Badge label={labels[status] ?? status} className={MEMBERSHIP_STATUS_CLASS[status] ?? FALLBACK_CLASS} />;
+}
 
-export const CLUB_STATUS_LABEL: Record<string, string> = Object.fromEntries(
-  Object.entries(CLUB_STATUS).map(([key, value]) => [key, value.label]),
-);
+// 관리자 필터·/my 신청 내역에서 쓰는 한국어 라벨 맵(기존 export 유지).
+export const APPLICATION_STATUS_LABEL: Record<string, string> = getDictionary("ko").status.application;
+
+export const CLUB_STATUS_LABEL: Record<string, string> = getDictionary("ko").status.club;

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getDictionary, type Locale } from "@/lib/i18n";
 
-const SOURCE_LABEL: Record<string, { label: string; className: string }> = {
-  student_council: { label: "원우회", className: "bg-purple-soft text-purple-dark" },
-  school_academic: { label: "학사공지", className: "bg-blue-soft text-blue-dark" },
+const SOURCE_CLASS: Record<string, string> = {
+  student_council: "bg-purple-soft text-purple-dark",
+  school_academic: "bg-blue-soft text-blue-dark",
 };
 
 type NoticePreview = { id: string; source: string; title: string; published_at: string };
@@ -21,7 +22,9 @@ function formatEventRange(startsOn: string, endsOn: string | null): string {
 // 홈의 "소식" 미리보기 — 최근 공지 3개 + 이번 달 가까운 학사일정 3개.
 // 실제 notices/academic_calendar_events 테이블을 직접 조회한다(과거
 // SchoolNews의 mock 데이터를 대체).
-export async function NewsPreview() {
+export async function NewsPreview({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale).newsPreview;
+  const sourceLabels: Record<string, string> = t.source;
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
@@ -51,22 +54,25 @@ export async function NewsPreview() {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-5 sm:py-8">
       <div className="flex items-end justify-between">
-        <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl lg:text-2xl">소식</h2>
+        <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl lg:text-2xl">{t.title}</h2>
         <Link href="/news" className="text-xs font-semibold text-muted-foreground hover:text-foreground sm:text-sm">
-          전체보기
+          {t.viewAll}
         </Link>
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-5 sm:mt-5 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-bold text-muted-foreground">최근 공지</h3>
+          <h3 className="text-sm font-bold text-muted-foreground">{t.recentNotices}</h3>
           {notices.length === 0 ? (
             <p className="rounded-xl border border-border bg-white p-4 text-sm text-muted-foreground">
-              등록된 공지가 없습니다.
+              {t.noNotices}
             </p>
           ) : (
             notices.map((notice) => {
-              const style = SOURCE_LABEL[notice.source] ?? { label: notice.source, className: "bg-muted text-muted-foreground" };
+              const style = {
+                label: sourceLabels[notice.source] ?? notice.source,
+                className: SOURCE_CLASS[notice.source] ?? "bg-muted text-muted-foreground",
+              };
               return (
                 <Link
                   key={notice.id}
@@ -84,10 +90,10 @@ export async function NewsPreview() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-bold text-muted-foreground">이번 달 학사일정</h3>
+          <h3 className="text-sm font-bold text-muted-foreground">{t.thisMonthCalendar}</h3>
           {events.length === 0 ? (
             <p className="rounded-xl border border-border bg-white p-4 text-sm text-muted-foreground">
-              등록된 학사일정이 없습니다.
+              {t.noCalendar}
             </p>
           ) : (
             events.map((event) => (

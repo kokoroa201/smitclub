@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowRight, Sparkles, Users } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
 import { ClubCard, type ClubCardData } from "@/components/clubs/club-card";
 import { ClubCardMini } from "@/components/clubs/club-card-mini";
 import { NextClubCard, NextClubCardMini } from "@/components/home/next-club-card";
@@ -65,7 +66,7 @@ async function getRecruitingClubs(): Promise<ClubCardData[]> {
 }
 
 export default async function Home() {
-  const clubs = await getRecruitingClubs();
+  const [clubs, locale] = await Promise.all([getRecruitingClubs(), getLocale()]);
 
   return (
     <div className="flex flex-col">
@@ -160,24 +161,24 @@ export default async function Home() {
                 정확히 같은 세로선에 있어야 하므로 full-bleed로 빼지 않음. */}
             <div className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:hidden">
               {clubs.map((club) => (
-                <ClubCardMini key={club.slug} club={club} />
+                <ClubCardMini key={club.slug} club={club} locale={locale} />
               ))}
-              <NextClubCardMini />
+              <NextClubCardMini locale={locale} />
             </div>
 
             {/* 태블릿/데스크톱 — 기존 그리드 */}
             <div className="hidden sm:mt-5 sm:grid sm:grid-cols-2 sm:items-stretch sm:gap-5 lg:grid-cols-3">
               {clubs.map((club) => (
-                <ClubCard key={club.slug} club={club} />
+                <ClubCard key={club.slug} club={club} locale={locale} />
               ))}
-              <NextClubCard />
+              <NextClubCard locale={locale} />
             </div>
           </>
         )}
       </section>
 
       {/* 소식(공지·학사일정) 미리보기 — 모집 중 동아리 바로 아래 */}
-      <NewsPreview />
+      <NewsPreview locale={locale} />
 
       {/* 이런 동아리 어때요? (카테고리 탐색)는 동아리 수가 늘어나 분류가
           필요해지면 다시 노출한다. 컴포넌트는 components/home/category-explorer.tsx

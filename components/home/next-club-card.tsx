@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus, Utensils, BookOpen, Clapperboard, Camera } from "lucide-react";
+import { getDictionary, type Locale } from "@/lib/i18n";
 
 // 카테고리 탐색 섹션을 당분간 숨긴 대신, 어떤 분야든 동아리를 만들 수 있다는
 // 힌트로 아이콘 몇 개만 옅게 보여준다. 실제 CLUB_CATEGORIES 목록과는 별개로
@@ -8,7 +9,8 @@ const PREVIEW_ICONS = [Utensils, BookOpen, Clapperboard, Camera];
 
 // 카드 전체가 하나의 링크(MAKE 페이지)라서, 안에 별도 "동아리 만들기" 버튼을
 // 두면 같은 목적지로 가는 CTA가 중복된다. 아이콘/문구만으로 클릭 유도.
-export function NextClubCard() {
+export function NextClubCard({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale).nextClubCard;
   return (
     <Link
       href="/clubs/new"
@@ -18,14 +20,18 @@ export function NextClubCard() {
         <Plus className="h-5 w-5" />
       </span>
       <div>
-        <p className="text-xs font-semibold text-coral-dark">개설 대기 중</p>
+        <p className="text-xs font-semibold text-coral-dark">{t.eyebrow}</p>
         <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground sm:text-xl">
-          다음 동아리의 주인공은?
+          {t.title}
         </h3>
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-          하고 싶었던 활동을
-          <br />
-          직접 시작해보세요.
+          {t.bodyLine1}
+          {t.bodyLine2 && (
+            <>
+              <br />
+              {t.bodyLine2}
+            </>
+          )}
         </p>
       </div>
       <div className="flex items-center justify-center gap-2.5 text-muted-foreground/50">
@@ -38,7 +44,8 @@ export function NextClubCard() {
 }
 
 // 모바일 가로 스크롤 목록에서 ClubCardMini와 같은 크기로 나란히 놓이는 축소판.
-export function NextClubCardMini() {
+export function NextClubCardMini({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale).nextClubCard;
   return (
     <Link
       href="/clubs/new"
@@ -48,8 +55,8 @@ export function NextClubCardMini() {
         <Plus className="h-4 w-4" />
       </span>
       <div>
-        <p className="text-[10px] font-semibold text-coral-dark">개설 대기 중</p>
-        <h3 className="mt-0.5 text-sm font-bold text-foreground">다음 주인공은?</h3>
+        <p className="text-[10px] font-semibold text-coral-dark">{t.eyebrow}</p>
+        <h3 className="mt-0.5 text-sm font-bold text-foreground">{t.miniTitle}</h3>
       </div>
       <div className="flex items-center justify-center gap-2 text-muted-foreground/50">
         {PREVIEW_ICONS.map((Icon, i) => (

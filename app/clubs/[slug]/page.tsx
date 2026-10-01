@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { categoryLabel } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
 
@@ -28,6 +30,7 @@ type ClubDetail = {
 export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) {
   const { slug } = await props.params;
   const cookieStore = await cookies();
+  const locale = await getLocale();
   const supabase = createClient(cookieStore);
 
   const { data: club } = await supabase
@@ -71,7 +74,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <span className="w-fit rounded-full bg-coral-soft px-2.5 py-1 text-xs font-semibold text-coral-dark">
-                {club.category}
+                {categoryLabel(club.category, locale)}
               </span>
               <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                 {club.name}
@@ -80,7 +83,7 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
                 )}
               </h1>
             </div>
-            <ClubStatusBadge status={club.status} />
+            <ClubStatusBadge status={club.status} locale={locale} />
           </div>
 
           {club.status === "recruiting" && (

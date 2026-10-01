@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AlertTriangle, BadgeCheck, Clock, FileEdit as FileEditIcon, Sparkles, ThumbsUp, XCircle, type LucideIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { categoryLabel, type Locale } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { requestOwnPasswordReset } from "@/lib/actions/auth";
 import { EditContactForm } from "@/components/profile/edit-contact-form";
@@ -83,6 +85,7 @@ export default async function MyPage(props: PageProps<"/my">) {
   const securitySent = searchParams.security_sent === "1";
 
   const cookieStore = await cookies();
+  const locale = await getLocale();
   const supabase = createClient(cookieStore);
 
   const {
@@ -217,7 +220,7 @@ export default async function MyPage(props: PageProps<"/my">) {
                   <Link href={`/clubs/${membership.clubs.slug}`} className="min-w-0 flex-1 truncate text-sm font-bold text-foreground hover:underline">
                     {membership.clubs.name}
                   </Link>
-                  <MembershipStatusBadge status={membership.status} />
+                  <MembershipStatusBadge status={membership.status} locale={locale} />
                 </div>
               ) : null,
             )}
@@ -232,7 +235,7 @@ export default async function MyPage(props: PageProps<"/my">) {
         ) : (
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {joinedClubs.map((club) => (
-              <MyClubCard key={club.id} club={club} />
+              <MyClubCard key={club.id} club={club} locale={locale} />
             ))}
           </div>
         )}
@@ -292,8 +295,10 @@ function ApplicationCard({
 
 function MyClubCard({
   club,
+  locale,
 }: {
   club: { id: string; name: string; slug: string; category: string; cover_image_url: string | null; status: string };
+  locale: Locale;
 }) {
   const categoryIndex = CLUB_CATEGORIES.indexOf(club.category as (typeof CLUB_CATEGORIES)[number]);
   const tone = CATEGORY_TONE[(categoryIndex < 0 ? 0 : categoryIndex) % CATEGORY_TONE.length];
@@ -310,9 +315,9 @@ function MyClubCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-foreground">{club.name}</p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">{club.category}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{categoryLabel(club.category, locale)}</p>
       </div>
-      <ClubStatusBadge status={club.status} />
+      <ClubStatusBadge status={club.status} locale={locale} />
     </Link>
   );
 }

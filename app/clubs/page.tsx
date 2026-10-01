@@ -3,6 +3,7 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
 import { ClubListCard, ClubListPlaceholderCard, type ClubListItem } from "@/components/clubs/club-list-card";
 
 const STATUS_TABS = [
@@ -62,6 +63,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
 
   const { data } = await query;
   const clubs = (data ?? []).map(toClubListItem);
+  const locale = await getLocale();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
@@ -142,9 +144,9 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-6">
           {clubs.map((club) => (
-            <ClubListCard key={club.slug} club={club} />
+            <ClubListCard key={club.slug} club={club} locale={locale} />
           ))}
-          {clubs.length === 1 && <ClubListPlaceholderCard />}
+          {clubs.length === 1 && <ClubListPlaceholderCard locale={locale} />}
         </div>
       )}
 

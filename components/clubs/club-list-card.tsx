@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Clapperboard, Coffee, Dumbbell, MessageCircle, Plus, Salad, Sparkles, UserPlus } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_ACCENT, DEFAULT_CATEGORY_ACCENT } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
+import { categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
 
 export type ClubListItem = {
   slug: string;
@@ -22,7 +23,8 @@ export type ClubListItem = {
 // 활동)만 표시하고, 회원 수·국적 비율 같은 지어낸 정보는 절대 넣지 않는다. 코랄은 카드
 // 안에서 "문화교류" 분류일 때만 등장하도록 하고(색 띠·아이콘 배지),
 // CTA는 코랄을 쓰지 않는다 — 강조점이 여러 군데로 흩어지지 않게.
-export function ClubListCard({ club }: { club: ClubListItem }) {
+export function ClubListCard({ club, locale }: { club: ClubListItem; locale: Locale }) {
+  const t = getDictionary(locale).clubCard;
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
   const accent = CATEGORY_ACCENT[club.category] ?? DEFAULT_CATEGORY_ACCENT;
   const isRecruiting = club.status === "recruiting";
@@ -53,11 +55,11 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
                 {club.name}
                 {club.nameEn && <span className="ml-1.5 font-medium text-muted-foreground">({club.nameEn})</span>}
               </h3>
-              <span className={`text-xs font-semibold sm:text-sm ${accent.text}`}>{club.category}</span>
+              <span className={`text-xs font-semibold sm:text-sm ${accent.text}`}>{categoryLabel(club.category, locale)}</span>
             </div>
           </div>
           <div className="shrink-0">
-            <ClubStatusBadge status={club.status} />
+            <ClubStatusBadge status={club.status} locale={locale} />
           </div>
         </div>
 
@@ -82,7 +84,7 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
             href={`/clubs/${club.slug}`}
             className="flex h-9 w-[6.875rem] flex-none items-center justify-center rounded-full border border-purple/40 bg-white px-4 text-[0.8125rem] font-semibold text-foreground transition-colors hover:bg-purple-soft/40 sm:h-10 sm:w-auto sm:flex-1 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-auto in-data-[font-size=large]:flex-1 in-data-[font-size=large]:text-sm"
           >
-            둘러보기
+            {t.explore}
           </Link>
           {isRecruiting ? (
             <Link
@@ -90,11 +92,11 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
               className="flex h-9 w-[8.125rem] flex-none items-center justify-center gap-1.5 rounded-full bg-navy px-4 text-[0.8125rem] font-semibold text-white transition-opacity hover:opacity-85 sm:h-10 sm:w-auto sm:flex-1 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-auto in-data-[font-size=large]:flex-1 in-data-[font-size=large]:text-sm"
             >
               <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 in-data-[font-size=large]:h-4 in-data-[font-size=large]:w-4" />
-              가입 신청
+              {t.join}
             </Link>
           ) : (
             <span className="flex h-9 w-[8.125rem] flex-none cursor-not-allowed items-center justify-center rounded-full bg-muted px-4 text-[0.8125rem] font-semibold text-muted-foreground sm:h-10 sm:w-auto sm:flex-1 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-auto in-data-[font-size=large]:flex-1 in-data-[font-size=large]:text-sm">
-              모집 준비 중
+              {t.comingSoon}
             </span>
           )}
         </div>
@@ -117,7 +119,8 @@ const PLACEHOLDER_ICONS: { Icon: typeof Sparkles; tone: string }[] = [
 // 실제 동아리가 1개뿐일 때 2열 그리드의 남는 칸을 채우는 안내 카드. 회원
 // 수·국적 등 지어낸 통계는 없고, 다음 동아리를 기다린다는 안내와 개설
 // 신청 CTA만 담는다.
-export function ClubListPlaceholderCard() {
+export function ClubListPlaceholderCard({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale).clubCard;
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed border-purple/30 bg-purple-soft/20 px-8 py-5 text-center sm:gap-4 sm:p-10 in-data-[font-size=large]:gap-3 in-data-[font-size=large]:py-8">
       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -130,13 +133,13 @@ export function ClubListPlaceholderCard() {
           </span>
         ))}
       </div>
-      <p className="text-sm font-bold text-foreground sm:text-base">다음 동아리를 기다리고 있어요</p>
+      <p className="text-sm font-bold text-foreground sm:text-base">{t.waitingNext}</p>
       <Link
         href="/clubs/new"
         className="flex w-fit items-center gap-1 rounded-full bg-coral px-4 py-1.5 text-[0.8125rem] font-semibold leading-5 text-white transition-colors hover:bg-coral-dark sm:h-10 sm:gap-1.5 sm:px-5 sm:py-0 sm:text-sm in-data-[font-size=large]:h-11 in-data-[font-size=large]:gap-1.5 in-data-[font-size=large]:px-5 in-data-[font-size=large]:py-0 in-data-[font-size=large]:text-sm"
       >
         <Plus className="h-[0.8125rem] w-[0.8125rem] sm:h-4 sm:w-4 in-data-[font-size=large]:h-4 in-data-[font-size=large]:w-4" />
-        동아리 개설 신청
+        {t.createClub}
       </Link>
     </div>
   );

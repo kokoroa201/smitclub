@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getLocale } from "@/lib/i18n/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { applyToClub } from "@/lib/actions/club-memberships";
 import { MembershipStatusBadge } from "@/components/admin/status-badge";
@@ -18,6 +19,7 @@ export default async function JoinClubPage(props: PageProps<"/clubs/[slug]/join"
   const success = searchParams.success === "1";
 
   const cookieStore = await cookies();
+  const locale = await getLocale();
   const supabase = createClient(cookieStore);
 
   const {
@@ -64,7 +66,7 @@ export default async function JoinClubPage(props: PageProps<"/clubs/[slug]/join"
       ) : existingMembership ? (
         <div className="mt-4 flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
           <span className="text-foreground">이미 가입 신청하셨습니다.</span>
-          <MembershipStatusBadge status={existingMembership.status} />
+          <MembershipStatusBadge status={existingMembership.status} locale={locale} />
         </div>
       ) : (
         <>
