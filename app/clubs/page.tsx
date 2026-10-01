@@ -27,6 +27,7 @@ function toClubListItem(club: {
   description: string | null;
   activities: string | null;
   status: string;
+  cover_image_url: string | null;
 }): ClubListItem {
   return {
     slug: club.slug,
@@ -36,6 +37,7 @@ function toClubListItem(club: {
     description: club.description,
     activities: club.activities,
     status: club.status,
+    coverImageUrl: club.cover_image_url,
   };
 }
 
@@ -51,7 +53,7 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
 
   let query = supabase
     .from("clubs")
-    .select("slug, name, name_en, category, description, activities, status")
+    .select("slug, name, name_en, category, description, activities, status, cover_image_url")
     .order("created_at", { ascending: false });
 
   if (statusFilter !== "all") {

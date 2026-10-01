@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Clapperboard, Coffee, Dumbbell, MessageCircle, Plus, Salad, Sparkles, UserPlus } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_ACCENT, DEFAULT_CATEGORY_ACCENT } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
@@ -11,11 +12,14 @@ export type ClubListItem = {
   description: string | null;
   activities: string | null;
   status: string;
+  coverImageUrl: string | null;
 };
 
-// 대표사진 없이 카테고리 색 띠(카드 맨 위, 고정 10~12px) + 원형 분류
-// 아이콘으로만 구분한다. 카드에는 실제 DB 값(소개/주요 활동)만 표시하고,
-// 회원 수·국적 비율 같은 지어낸 정보는 절대 넣지 않는다. 코랄은 카드
+// 카드 맨 위 카테고리 색 띠 + 동아리명 왼쪽 56/64px 썸네일로 구분한다.
+// 회장이 /my/club에서 대표사진(cover_image_url)을 올렸으면 썸네일에 그
+// 사진을, 없으면 같은 자리·크기에 카테고리 색 + 아이콘을 보여줘서 사진
+// 유무와 관계없이 카드 구조와 정렬이 같다. 카드에는 실제 DB 값(소개/주요
+// 활동)만 표시하고, 회원 수·국적 비율 같은 지어낸 정보는 절대 넣지 않는다. 코랄은 카드
 // 안에서 "문화교류" 분류일 때만 등장하도록 하고(색 띠·아이콘 배지),
 // CTA는 코랄을 쓰지 않는다 — 강조점이 여러 군데로 흩어지지 않게.
 export function ClubListCard({ club }: { club: ClubListItem }) {
@@ -35,9 +39,15 @@ export function ClubListCard({ club }: { club: ClubListItem }) {
       <div className="flex flex-1 flex-col gap-2 px-5 pb-3.5 pt-4 sm:gap-4 sm:px-6 sm:pb-5 sm:pt-6 in-data-[font-size=large]:gap-3 in-data-[font-size=large]:pb-4 in-data-[font-size=large]:pt-5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
-            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full sm:h-12 sm:w-12 in-data-[font-size=large]:h-11 in-data-[font-size=large]:w-11 ${accent.icon}`}>
-              <CategoryIcon className="h-5 w-5" strokeWidth={2} />
-            </span>
+            {club.coverImageUrl ? (
+              <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-16 sm:w-16 sm:rounded-[14px]">
+                <Image src={club.coverImageUrl} alt="" fill sizes="(min-width: 640px) 64px, 56px" className="object-cover" />
+              </span>
+            ) : (
+              <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl sm:h-16 sm:w-16 sm:rounded-[14px] ${accent.icon}`}>
+                <CategoryIcon className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2} />
+              </span>
+            )}
             <div className="min-w-0">
               <h3 className="truncate text-lg font-bold tracking-tight text-foreground sm:text-xl">
                 {club.name}
