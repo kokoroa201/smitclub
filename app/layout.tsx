@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { pretendard } from "./fonts";
 import { getCurrentProfile } from "@/lib/auth";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/utils/supabase/server";
 import { SiteHeader } from "@/components/nav/site-header";
 import { BottomNav } from "@/components/nav/bottom-nav";
@@ -21,7 +22,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const profile = await getCurrentProfile();
+  const [profile, locale] = await Promise.all([getCurrentProfile(), getLocale()]);
 
   let unreadNotifications = 0;
   if (profile) {
@@ -36,9 +37,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   }
 
   return (
-    <html lang="ko" className={`${pretendard.variable} h-full antialiased`}>
+    <html lang={locale} className={`${pretendard.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <SiteHeader profile={profile} unreadNotifications={unreadNotifications} />
+        <SiteHeader profile={profile} unreadNotifications={unreadNotifications} locale={locale} />
         <div className="flex-1 pb-24 md:pb-0">
           {children}
           <SiteFooter />

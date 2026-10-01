@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Bell, Compass, FileText, Home, Newspaper, UserRound } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/auth";
+import type { Locale } from "@/lib/i18n";
 import { AccessibilityControls } from "@/components/nav/accessibility-controls";
 
 const NAV_LINKS = [
@@ -15,15 +16,17 @@ const NAV_LINKS = [
 export function SiteHeader({
   profile,
   unreadNotifications = 0,
+  locale,
 }: {
   profile: Profile | null;
   unreadNotifications?: number;
+  locale: Locale;
 }) {
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur print:hidden">
       <div className="border-b border-border/70 bg-muted/60">
         <div className="mx-auto flex h-11 max-w-6xl items-center justify-end px-4">
-          <AccessibilityControls />
+          <AccessibilityControls locale={locale} />
         </div>
       </div>
 
