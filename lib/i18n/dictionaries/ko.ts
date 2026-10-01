@@ -2,7 +2,45 @@
 // 여기 키를 추가하면 en.ts에도 같은 키를 넣기 전까지 tsc가 실패한다.
 // 페이지 문구는 단계적으로 옮긴다(공통 UI + 홈·동아리 목록·상세).
 // "{name}" 같은 자리표시자는 fill()로 채운다.
+import { APPLICATION_STEPS, ELIGIBILITY_ITEMS, PROCESSING_TIMELINE } from "@/lib/constants/club-application-rules";
+import { CLUB_RULE_DOCS } from "@/lib/constants/club-rules-documents";
+
 export const ko = {
+  newsPage: {
+    intro: "학교 학사공지와 원우회 소식을 한곳에서 확인하세요.",
+    notices: "공지",
+    calendar: "학사일정",
+    viewOriginal: "원문 보기 →",
+    viewDetails: "자세히 보기 →",
+    previousMonth: "← 이전 달",
+    nextMonth: "다음 달 →",
+    back: "← 소식 목록으로",
+    noBody: "등록된 본문이 없습니다.",
+  },
+  clubRules: {
+    title: "동아리 안내 및 규정",
+    intro: "동아리 개설 절차와 운영에 필요한 규정·표준 회칙을 확인하세요.",
+    procedure: "동아리 개설 절차",
+    procedureIntro: "아이디어 구상부터 공식 활동 시작까지, 5단계로 진행됩니다.",
+    steps: APPLICATION_STEPS.map((step) => ({
+      title: String(step.title),
+      description: String(step.description),
+      emphasis: [...step.emphasis] as string[],
+    })),
+    eligibility: "신청 자격",
+    eligibilityItems: [...ELIGIBILITY_ITEMS] as string[],
+    timeline: "처리 일정",
+    timelineItems: PROCESSING_TIMELINE.map((item) => ({ label: String(item.label), value: String(item.value) })),
+    apply: "온라인으로 동아리 개설 신청하기",
+    documents: {
+      operating: { label: String(CLUB_RULE_DOCS[0].label), description: String(CLUB_RULE_DOCS[0].description) },
+      charter: { label: String(CLUB_RULE_DOCS[1].label), description: String(CLUB_RULE_DOCS[1].description) },
+    },
+    downloadPdf: "PDF 다운로드",
+    downloadHwp: "HWP 다운로드",
+    pdfHelp: "PDF가 화면에 보이지 않으면 위 “PDF 다운로드” 버튼으로 내려받아 확인해주세요.",
+    officialDocumentsNote: "공식 문서는 한국어로 제공됩니다.",
+  },
   home: {
     season: "2026 동아리 시즌",
     heroStart: "학교생활,",

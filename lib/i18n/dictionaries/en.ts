@@ -1,8 +1,82 @@
 import type { Dictionary } from "./ko";
+import { MIN_FOUNDERS, MIN_KOREAN_FOUNDERS, MIN_INTERNATIONAL_FOUNDERS } from "@/lib/constants/club-application-rules";
+
+const applicationSteps = [
+  {
+    title: "Define Your Club",
+    description: "Plan your club’s purpose, activities and membership.",
+    emphasis: ["purpose, activities and membership"],
+  },
+  {
+    title: "Apply Online",
+    description: `Submit the form with at least ${MIN_FOUNDERS} members, including at least ${MIN_KOREAN_FOUNDERS} Korean and ${MIN_INTERNATIONAL_FOUNDERS} international student.`,
+    emphasis: [`at least ${MIN_FOUNDERS} members`, `${MIN_KOREAN_FOUNDERS} Korean and ${MIN_INTERNATIONAL_FOUNDERS} international student`],
+  },
+  {
+    title: "Council Review",
+    description: "The Student Council reviews your application and confirms your faculty advisor.",
+    emphasis: ["confirms your faculty advisor"],
+  },
+  {
+    title: "School Consultation",
+    description: "The Student Council and Academic Affairs team hold a final consultation to confirm club registration.",
+    emphasis: ["confirm club registration"],
+  },
+  {
+    title: "Approval & Launch",
+    description: "Once approved, complete registration and start official club activities.",
+    emphasis: ["start official club activities"],
+  },
+];
 
 // Dictionary(ko 기준) 타입을 명시해서 키가 빠지거나 남으면 tsc가 잡는다.
 // 직역보다 외국인 원우가 학교 사이트에서 바로 이해할 짧은 표현을 쓴다.
 export const en: Dictionary = {
+  newsPage: {
+    intro: "Academic and Student Council news in one place.",
+    notices: "Notices",
+    calendar: "Academic Calendar",
+    viewOriginal: "View Original →",
+    viewDetails: "Read More →",
+    previousMonth: "← Prev",
+    nextMonth: "Next →",
+    back: "← Back to News",
+    noBody: "No content available.",
+  },
+  clubRules: {
+    title: "Club Guide & Rules",
+    intro: "How to start a club, plus rules and a model constitution.",
+    procedure: "Start a Club",
+    procedureIntro: "Five steps from idea to official club activities.",
+    steps: applicationSteps,
+    eligibility: "Who Can Apply",
+    eligibilityItems: [
+      `At least ${MIN_FOUNDERS} enrolled students, including at least ${MIN_KOREAN_FOUNDERS} Korean and ${MIN_INTERNATIONAL_FOUNDERS} international student`,
+      "A clear club purpose and activity plan",
+      "Prior consent from a faculty advisor",
+    ],
+    timeline: "Processing Timeline",
+    timelineItems: [
+      { label: applicationSteps[2].title, value: "About 3–5 days" },
+      { label: applicationSteps[3].title, value: "About 5–7 days" },
+      { label: "Approval notice", value: "Notification & email" },
+    ],
+    apply: "Apply to Start a Club",
+    documents: {
+      operating: {
+        label: "Club Regulations",
+        description: "Official university rules on club categories, registration requirements and operations.",
+      },
+      charter: {
+        label: "Club Constitution",
+        description: "A template to help each club write its own constitution.",
+      },
+    },
+    downloadPdf: "Download PDF",
+    downloadHwp: "Download HWP",
+    pdfHelp: "Can’t see the PDF? Use “Download PDF” above to open it.",
+    officialDocumentsNote: "Official documents are provided in Korean.",
+  },
   home: {
     season: "2026 Club Season",
     heroStart: "Campus life,",

@@ -2,19 +2,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getDictionary, type Locale } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/i18n/format";
 
-const NOTICE_SOURCE_STYLE: Record<string, { label: string; className: string }> = {
-  student_council: { label: "원우회", className: "bg-purple-soft text-purple-dark" },
-  school_academic: { label: "학사공지", className: "bg-blue-soft text-blue-dark" },
+const NOTICE_SOURCE_STYLE = {
+  student_council: "bg-purple-soft text-purple-dark",
+  school_academic: "bg-blue-soft text-blue-dark",
 };
 
-const SOURCE_FILTERS = [
-  { key: "all", label: "전체" },
-  { key: "council", label: "원우회" },
-  { key: "academic", label: "학사공지" },
-] as const;
+const SOURCE_FILTERS = ["all", "council", "academic"] as const;
 
-type SourceFilter = (typeof SOURCE_FILTERS)[number]["key"];
+type SourceFilter = (typeof SOURCE_FILTERS)[number];
 
 type NoticeRow = {
   id: string;
@@ -32,17 +31,18 @@ type CalendarEventRow = {
   ends_on: string | null;
 };
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
-}
-
-function formatEventRange(startsOn: string, endsOn: string | null): string {
+function formatEventRange(startsOn: string, endsOn: string | null, locale: Locale): string {
   const start = new Date(`${startsOn}T00:00:00`);
-  const startLabel = `${start.getMonth() + 1}.${start.getDate()}`;
+  const startLabel = locale === "en"
+    ? formatDate(start, locale, { month: "short", day: "numeric" })
+    : `${start.getMonth() + 1}.${start.getDate()}`;
   if (!endsOn || endsOn === startsOn) return startLabel;
   const end = new Date(`${endsOn}T00:00:00`);
-  const endLabel = `${end.getMonth() + 1}.${end.getDate()}`;
-  return `${startLabel} ~ ${endLabel}`;
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  const endLabel = locale === "en"
+    ? formatDate(end, locale, { month: sameMonth ? undefined : "short", day: "numeric" })
+    : `${end.getMonth() + 1}.${end.getDate()}`;
+  return locale === "en" ? `${startLabel}–${endLabel}` : `${startLabel} ~ ${endLabel}`;
 }
 
 function parseMonthParam(value: string | undefined): { year: number; month: number } {
@@ -63,9 +63,12 @@ function shiftMonth(year: number, month: number, delta: number): { year: number;
 
 export default async function NewsPage(props: PageProps<"/news">) {
   const searchParams = await props.searchParams;
+  const locale = await getLocale();
+  const t = getDictionary(locale);
+  const sourceLabels = { all: t.clubsPage.tabs.all, council: t.newsPreview.source.student_council, academic: t.newsPreview.source.school_academic };
   const tab = searchParams.tab === "calendar" ? "calendar" : "notice";
   const sourceParam = typeof searchParams.source === "string" ? searchParams.source : "all";
-  const sourceFilter: SourceFilter = SOURCE_FILTERS.some((f) => f.key === sourceParam)
+  const sourceFilter: SourceFilter = SOURCE_FILTERS.some((f) => f === sourceParam)
     ? (sourceParam as SourceFilter)
     : "all";
 
@@ -114,9 +117,9 @@ export default async function NewsPage(props: PageProps<"/news">) {
         <Image src="/img/news_hero.png" alt="" fill sizes="100vw" className="object-cover" priority />
         <div className="absolute inset-y-0 left-0 w-[70%] bg-gradient-to-r from-white/95 via-white/60 to-transparent sm:w-[55%] sm:from-white/90 sm:via-white/40" />
         <div className="absolute inset-0 z-10 flex max-w-[62%] flex-col justify-center px-4 py-8 sm:max-w-[46%] sm:px-8 sm:py-14">
-          <h1 className="text-lg font-extrabold leading-snug text-[#16234a] sm:text-2xl lg:text-3xl">소식</h1>
+          <h1 className="text-lg font-extrabold leading-snug text-[#16234a] sm:text-2xl lg:text-3xl">{t.nav.news}</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-[#2f3b5c] sm:mt-2 sm:text-base">
-            학교 학사공지와 원우회 소식을 한곳에서 확인하세요.
+            {t.newsPage.intro}
           </p>
         </div>
       </section>
@@ -128,7 +131,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
             tab === "notice" ? "bg-coral text-white" : "border border-border text-muted-foreground hover:bg-muted"
           }`}
         >
-          공지
+          {t.newsPage.notices}
         </Link>
         <Link
           href="/news?tab=calendar"
@@ -136,7 +139,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
             tab === "calendar" ? "bg-coral text-white" : "border border-border text-muted-foreground hover:bg-muted"
           }`}
         >
-          학사일정
+          {t.newsPage.calendar}
         </Link>
       </div>
 
@@ -145,13 +148,13 @@ export default async function NewsPage(props: PageProps<"/news">) {
           <div className="mt-3 flex gap-2 sm:mt-4">
             {SOURCE_FILTERS.map((f) => (
               <Link
-                key={f.key}
-                href={`/news?tab=notice&source=${f.key}`}
+                key={f}
+                href={`/news?tab=notice&source=${f}`}
                 className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
-                  sourceFilter === f.key ? "bg-navy text-white" : "border border-border text-muted-foreground hover:bg-muted"
+                  sourceFilter === f ? "bg-navy text-white" : "border border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
-                {f.label}
+                {sourceLabels[f]}
               </Link>
             ))}
           </div>
@@ -161,7 +164,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
               큰 글씨 모드(in-data-[font-size=large])는 기존 카드 크기 그대로. */}
           <div className="mt-3 flex flex-col gap-1.5 sm:mt-4 sm:gap-2 in-data-[font-size=large]:gap-2">
             {notices.length === 0 && (
-              <p className="py-10 text-center text-sm text-muted-foreground">등록된 공지가 없습니다.</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">{t.newsPreview.noNotices}</p>
             )}
             {notices.map((notice) => {
               const style = NOTICE_SOURCE_STYLE[notice.source];
@@ -172,12 +175,12 @@ export default async function NewsPage(props: PageProps<"/news">) {
                 isAcademic ? (
                   notice.source_url && (
                     <a href={notice.source_url} target="_blank" rel="noopener noreferrer nofollow" className={className}>
-                      원문 보기 →
+                      {t.newsPage.viewOriginal}
                     </a>
                   )
                 ) : (
                   <Link href={`/news/${notice.id}`} className={className}>
-                    자세히 보기 →
+                    {t.newsPage.viewDetails}
                   </Link>
                 );
               return (
@@ -186,11 +189,11 @@ export default async function NewsPage(props: PageProps<"/news">) {
                   className="rounded-xl border border-border bg-white px-4 py-2.5 sm:p-4 in-data-[font-size=large]:p-4"
                 >
                   <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${style.className}`}>
-                      {style.label}
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${style}`}>
+                      {t.newsPreview.source[notice.source]}
                     </span>
                     <span className="text-[0.6875rem] text-muted-foreground sm:text-xs in-data-[font-size=large]:ml-auto in-data-[font-size=large]:text-xs">
-                      {formatDate(notice.published_at)}
+                      {formatDate(notice.published_at, locale, { year: "numeric", month: locale === "en" ? "short" : "long", day: "numeric" })}
                     </span>
                     {/* 모바일·데스크톱 공통(큰 글씨 모드 제외) — 날짜 줄 오른쪽 끝.
                         음수 마진+패딩으로 터치 영역을 36px 높이로 넓히되 날짜 줄
@@ -222,27 +225,27 @@ export default async function NewsPage(props: PageProps<"/news">) {
               href={`/news?tab=calendar&month=${monthKey(prev.year, prev.month)}`}
               className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted"
             >
-              ← 이전 달
+              {t.newsPage.previousMonth}
             </Link>
             <p className="font-bold text-foreground">
-              {year || new Date().getFullYear()}년 {month || new Date().getMonth() + 1}월
+              {formatDate(new Date(year, month - 1, 1), locale, { year: "numeric", month: "long" })}
             </p>
             <Link
               href={`/news?tab=calendar&month=${monthKey(next.year, next.month)}`}
               className="rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted"
             >
-              다음 달 →
+              {t.newsPage.nextMonth}
             </Link>
           </div>
 
           <div className="mt-4 flex flex-col gap-2">
             {events.length === 0 && (
-              <p className="py-10 text-center text-sm text-muted-foreground">등록된 학사일정이 없습니다.</p>
+              <p className="py-10 text-center text-sm text-muted-foreground">{t.newsPreview.noCalendar}</p>
             )}
             {events.map((event) => (
               <div key={event.id} className="flex items-start gap-3 rounded-xl border border-border bg-white p-4">
                 <span className="shrink-0 rounded-full bg-blue-soft px-2.5 py-1 text-xs font-bold text-blue-dark">
-                  {formatEventRange(event.starts_on, event.ends_on)}
+                  {formatEventRange(event.starts_on, event.ends_on, locale)}
                 </span>
                 <p className="text-sm text-foreground">{event.title}</p>
               </div>
