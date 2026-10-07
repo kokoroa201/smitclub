@@ -5,10 +5,12 @@ import { createClient } from "@/utils/supabase/server";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
+import { newsTitle, type NewsSource } from "@/lib/news-sync/presentation";
 
 const NOTICE_SOURCE_STYLE = {
   student_council: "bg-purple-soft text-purple-dark",
   school_academic: "bg-blue-soft text-blue-dark",
+  school_news: "bg-yellow-soft text-yellow-dark",
 };
 
 const SOURCE_FILTERS = ["all", "council", "academic"] as const;
@@ -17,8 +19,11 @@ type SourceFilter = (typeof SOURCE_FILTERS)[number];
 
 type NoticeRow = {
   id: string;
-  source: "student_council" | "school_academic";
+  source: NewsSource;
   title: string;
+  title_en: string | null;
+  title_en_source: string | null;
+  has_en_attachment: boolean;
   summary: string | null;
   source_url: string | null;
   published_at: string;
@@ -65,8 +70,8 @@ export default async function NewsPage(props: PageProps<"/news">) {
   const searchParams = await props.searchParams;
   const locale = await getLocale();
   const t = getDictionary(locale);
-  const sourceLabels = { all: t.clubsPage.tabs.all, council: t.newsPreview.source.student_council, academic: t.newsPreview.source.school_academic };
-  const tab = searchParams.tab === "calendar" ? "calendar" : "notice";
+  const sourceLabels = { all: t.clubsPage.tabs.all, council: t.newsPreview.source.student_council, academic: t.newsPage.academicFilter };
+  const tab = searchParams.tab === "calendar" ? "calendar" : searchParams.tab === "school" ? "school" : "notice";
   const sourceParam = typeof searchParams.source === "string" ? searchParams.source : "all";
   const sourceFilter: SourceFilter = SOURCE_FILTERS.some((f) => f === sourceParam)
     ? (sourceParam as SourceFilter)
@@ -76,21 +81,24 @@ export default async function NewsPage(props: PageProps<"/news">) {
   const supabase = createClient(cookieStore);
 
   let notices: NoticeRow[] = [];
+  let noticesLoadFailed = false;
   let events: CalendarEventRow[] = [];
   let year = 0;
   let month = 0;
 
-  if (tab === "notice") {
+  if (tab !== "calendar") {
     let query = supabase
       .from("notices")
-      .select("id, source, title, summary, source_url, published_at")
+      .select("id, source, title, title_en, title_en_source, has_en_attachment, summary, source_url, published_at")
+      .in("source", tab === "school" ? ["school_news"] : ["student_council", "school_academic"])
       .order("published_at", { ascending: false })
       .limit(50);
 
-    if (sourceFilter === "council") query = query.eq("source", "student_council");
-    if (sourceFilter === "academic") query = query.eq("source", "school_academic");
+    if (tab === "notice" && sourceFilter === "council") query = query.eq("source", "student_council");
+    if (tab === "notice" && sourceFilter === "academic") query = query.eq("source", "school_academic");
 
-    const { data } = await query;
+    const { data, error } = await query;
+    noticesLoadFailed = Boolean(error);
     notices = data ?? [];
   } else {
     ({ year, month } = parseMonthParam(typeof searchParams.month === "string" ? searchParams.month : undefined));
@@ -124,7 +132,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
         </div>
       </section>
 
-      <div className="mt-4 flex gap-2 sm:mt-6">
+      <div className="mt-4 flex flex-wrap gap-2 sm:mt-6">
         <Link
           href="/news?tab=notice"
           className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
@@ -132,6 +140,14 @@ export default async function NewsPage(props: PageProps<"/news">) {
           }`}
         >
           {t.newsPage.notices}
+        </Link>
+        <Link
+          href="/news?tab=school"
+          className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
+            tab === "school" ? "bg-coral text-white" : "border border-border text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          {t.newsPage.schoolNews}
         </Link>
         <Link
           href="/news?tab=calendar"
@@ -143,28 +159,32 @@ export default async function NewsPage(props: PageProps<"/news">) {
         </Link>
       </div>
 
-      {tab === "notice" ? (
+      {tab !== "calendar" ? (
         <>
-          <div className="mt-3 flex gap-2 sm:mt-4">
-            {SOURCE_FILTERS.map((f) => (
-              <Link
-                key={f}
-                href={`/news?tab=notice&source=${f}`}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
-                  sourceFilter === f ? "bg-navy text-white" : "border border-border text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {sourceLabels[f]}
-              </Link>
-            ))}
-          </div>
+          {tab === "notice" && (
+            <div className="mt-3 flex gap-2 sm:mt-4">
+              {SOURCE_FILTERS.map((f) => (
+                <Link
+                  key={f}
+                  href={`/news?tab=notice&source=${f}`}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
+                    sourceFilter === f ? "bg-navy text-white" : "border border-border text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {sourceLabels[f]}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* 모바일은 한 화면에 더 많이 훑어볼 수 있는 compact list — 제목은
               크기 대신 굵기로 위계를 주고 2줄까지만, 요약은 1줄. sm: 이상과
               큰 글씨 모드(in-data-[font-size=large])는 기존 카드 크기 그대로. */}
           <div className="mt-3 flex flex-col gap-1.5 sm:mt-4 sm:gap-2 in-data-[font-size=large]:gap-2">
-            {notices.length === 0 && (
-              <p className="py-10 text-center text-sm text-muted-foreground">{t.newsPreview.noNotices}</p>
+            {noticesLoadFailed ? (
+              <p role="alert" className="py-10 text-center text-sm text-muted-foreground">{t.newsPage.loadError}</p>
+            ) : notices.length === 0 && (
+              <p className="py-10 text-center text-sm text-muted-foreground">{tab === "school" ? t.newsPage.noSchoolNews : t.newsPreview.noNotices}</p>
             )}
             {notices.map((notice) => {
               const style = NOTICE_SOURCE_STYLE[notice.source];
@@ -172,7 +192,7 @@ export default async function NewsPage(props: PageProps<"/news">) {
               // 같은 링크를 모바일(날짜 줄 오른쪽)과 sm:/큰 글씨 모드(아래 별도
               // 행) 두 곳에 그린다 — 목적지·동작이 어긋나지 않도록 한 곳에서 만든다.
               const renderLink = (className: string) =>
-                isAcademic ? (
+                notice.source !== "student_council" ? (
                   notice.source_url && (
                     <a href={notice.source_url} target="_blank" rel="noopener noreferrer nofollow" className={className}>
                       {t.newsPage.viewOriginal}
@@ -203,9 +223,12 @@ export default async function NewsPage(props: PageProps<"/news">) {
                     )}
                   </div>
                   <p className="mt-1 line-clamp-2 text-[0.8125rem] font-semibold leading-snug text-foreground sm:mt-2 sm:line-clamp-none sm:text-base sm:font-bold sm:leading-normal in-data-[font-size=large]:mt-2 in-data-[font-size=large]:text-base in-data-[font-size=large]:font-bold in-data-[font-size=large]:leading-normal">
-                    {notice.title}
+                    {newsTitle(notice, locale)}
                   </p>
-                  {notice.summary && (
+                  {isAcademic && notice.has_en_attachment && (
+                    <p className="mt-1 text-xs font-semibold text-blue-dark">{t.newsPage.enAttachment}</p>
+                  )}
+                  {notice.summary && (locale !== "en" || notice.source === "student_council") && (
                     <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground sm:mt-1 sm:line-clamp-2 sm:text-sm in-data-[font-size=large]:mt-1 in-data-[font-size=large]:line-clamp-2 in-data-[font-size=large]:text-sm">
                       {notice.summary}
                     </p>

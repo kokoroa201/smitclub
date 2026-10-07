@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
 import type { ClubCardData } from "@/components/clubs/club-card";
-import { clubName, categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
+import { clubText, clubName, categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
 
 // 모바일 "지금 모집 중인 동아리" 가로 스크롤 목록 전용 카드. ClubCard(데스크톱
 // 그리드용)와 별개로, 175~185px 고정폭 + snap-scroll에 맞춘 축소 레이아웃.
 export function ClubCardMini({ club, locale }: { club: ClubCardData; locale: Locale }) {
   const t = getDictionary(locale);
+  const description = clubText(club.description, club.descriptionEn, locale);
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
   // ClubCard와 동일한 이유로 suda.png에만 밝기/대비/채도 보정을 적용한다.
   const coverFilter = club.slug === "suda" ? "brightness(1.1) contrast(1.05) saturate(1.2)" : undefined;
@@ -43,8 +44,8 @@ export function ClubCardMini({ club, locale }: { club: ClubCardData; locale: Loc
           {categoryLabel(club.category, locale)}
         </span>
         <h3 className="text-base font-bold tracking-tight text-foreground">{clubName(club.name, club.nameEn, locale)}</h3>
-        {club.description && (
-          <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{club.description}</p>
+        {description && (
+          <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{description}</p>
         )}
         <span className="mt-auto inline-flex w-full items-center justify-center rounded-full bg-coral py-1.5 text-[11px] font-semibold text-white">
           {t.clubCard.join}

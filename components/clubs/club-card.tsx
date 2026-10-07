@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Sparkles } from "lucide-react";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
-import { clubName, categoryLabel, fill, getDictionary, type Locale } from "@/lib/i18n";
+import { clubText, clubName, categoryLabel, fill, getDictionary, type Locale } from "@/lib/i18n";
 
 export type ClubCardData = {
   slug: string;
@@ -9,14 +9,18 @@ export type ClubCardData = {
   nameEn: string | null;
   category: string;
   description: string | null;
+  descriptionEn?: string | null;
   coverImageUrl: string | null;
   meetingDay: string | null;
+  meetingDayEn?: string | null;
   meetingLocation: string | null;
+  meetingLocationEn?: string | null;
 };
 
 export function ClubCard({ club, locale }: { club: ClubCardData; locale: Locale }) {
   const t = getDictionary(locale);
-  const meetingInfo = [club.meetingDay, club.meetingLocation].filter(Boolean).join(" · ");
+  const description = clubText(club.description, club.descriptionEn, locale);
+  const meetingInfo = [clubText(club.meetingDay, club.meetingDayEn, locale), clubText(club.meetingLocation, club.meetingLocationEn, locale)].filter(Boolean).join(" · ");
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
   // suda.png는 원본이 어둡고 채도가 낮아 Hero의 선명한 색감과 따로 노는
   // 느낌이 들어서, 이 이미지에 한해서만 밝기/대비/채도를 살짝 보정한다.
@@ -52,9 +56,9 @@ export function ClubCard({ club, locale }: { club: ClubCardData; locale: Locale 
           {categoryLabel(club.category, locale)}
         </span>
         <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-2xl">{clubName(club.name, club.nameEn, locale)}</h3>
-        {club.description && (
+        {description && (
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:line-clamp-3 sm:text-base">
-            {club.description}
+            {description}
           </p>
         )}
         {meetingInfo && (

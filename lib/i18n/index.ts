@@ -32,5 +32,10 @@ export function categoryLabel(category: string, locale: Locale = DEFAULT_LOCALE)
 }
 
 export function clubName(name: string, nameEn: string | null | undefined, locale: Locale): string {
-  return locale === "en" ? nameEn || name : name;
+  return clubText(name, nameEn, locale);
+}
+
+// Public club content only. Administrative and personal data remain single values.
+export function clubText(value: string | null | undefined, valueEn: string | null | undefined, locale: Locale): string {
+  return (locale === "en" ? valueEn?.trim() || value?.trim() : value?.trim() || valueEn?.trim()) || "";
 }

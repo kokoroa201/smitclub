@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Home, Newspaper, UserRound, type LucideIcon } from "lucide-react";
+import { Compass, FileText, Home, Newspaper, UserRound, type LucideIcon } from "lucide-react";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
 // "동아리 안내"(/club-rules)는 여기 독립 탭으로 두지 않는다 — 중앙 MAKE
@@ -20,8 +20,8 @@ export function BottomNav({ locale }: { locale: Locale }) {
   const pathname = usePathname();
   const t = getDictionary(locale).nav;
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  const renderTab = (tab: (typeof TABS)[number]) => (
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+  const renderTab = (tab: { href: string; labelKey: keyof typeof t; icon: LucideIcon }) => (
     <BottomNavLink href={tab.href} icon={tab.icon} label={t[tab.labelKey]} active={isActive(tab.href)} />
   );
 
@@ -32,7 +32,7 @@ export function BottomNav({ locale }: { locale: Locale }) {
     >
       <div className="relative mx-auto grid h-16 max-w-md grid-cols-5 px-2">
         {renderTab(TABS[0])}
-        {renderTab(TABS[1])}
+        {renderTab(pathname === "/club-rules" || pathname === "/clubs/new" ? { href: pathname === "/clubs/new" ? "/clubs/new" : "/club-rules", labelKey: "clubGuide", icon: FileText } : TABS[1])}
 
         {/* 중앙 MAKE 버튼 자리 확보용 spacer */}
         <div aria-hidden />
@@ -66,6 +66,7 @@ function BottomNavLink({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={`flex flex-col items-center justify-center gap-0.5 text-xs transition-colors ${
         active ? "font-bold text-coral" : "font-medium text-muted-foreground"
       }`}

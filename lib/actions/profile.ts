@@ -1,5 +1,8 @@
 "use server";
 
+import { getDictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
@@ -25,16 +28,17 @@ export async function updateMyProfile(
   _prevState: UpdateProfileState,
   formData: FormData,
 ): Promise<UpdateProfileState> {
+  const t = getDictionary(await getLocale()).account;
   const profile = await getCurrentProfile();
   if (!profile) {
-    return { error: "로그인이 필요합니다.", success: false };
+    return { error: t.errors.loginRequired, success: false };
   }
 
   const contact = digitsOnly(String(formData.get("contact") ?? "").trim());
   const department = String(formData.get("department") ?? "").trim();
 
   if (!isValidDepartment(department)) {
-    return { error: "학과·전공은 제공된 목록에서 선택해주세요.", success: false };
+    return { error: t.errors.invalidDepartment, success: false };
   }
 
   const cookieStore = await cookies();
@@ -53,7 +57,7 @@ export async function updateMyProfile(
 
   if (error) {
     console.error("profile_private update failed", error);
-    return { error: "저장 중 오류가 발생했습니다. 다시 시도해주세요.", success: false };
+    return { error: t.errors.saveFailed, success: false };
   }
 
   return { error: null, success: true };

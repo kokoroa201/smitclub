@@ -1,11 +1,14 @@
 "use client";
 
+import { getDictionary, type Locale } from "@/lib/i18n";
+
 import { useId, useRef, useState } from "react";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
 
-export function CoverImageField({ currentUrl }: { currentUrl: string | null }) {
+export function CoverImageField({ currentUrl, locale }: { currentUrl: string | null; locale: Locale }) {
+  const t = getDictionary(locale).clubManage;
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(currentUrl);
@@ -16,12 +19,12 @@ export function CoverImageField({ currentUrl }: { currentUrl: string | null }) {
     if (!file) return;
 
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setClientError("JPG, PNG, WebP 파일만 업로드할 수 있습니다.");
+      setClientError(t.invalidCover);
       event.target.value = "";
       return;
     }
     if (file.size > MAX_BYTES) {
-      setClientError("파일 크기는 5MB 이하여야 합니다.");
+      setClientError(t.largeCover);
       event.target.value = "";
       return;
     }
@@ -33,17 +36,17 @@ export function CoverImageField({ currentUrl }: { currentUrl: string | null }) {
   return (
     <div className="flex flex-col gap-2 text-sm">
       <label htmlFor={inputId} className="font-medium text-foreground">
-        대표사진
+        {t.cover}
       </label>
-      <p className="text-xs text-muted-foreground">JPG, PNG, WebP · 최대 5MB</p>
+      <p className="text-xs text-muted-foreground">{t.coverHint}</p>
 
       <div className="flex items-center gap-4">
         <div className="flex h-20 w-32 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="대표사진 미리보기" className="h-full w-full object-cover" />
+            <img src={preview} alt={t.coverPreview} className="h-full w-full object-cover" />
           ) : (
-            <span className="text-xs text-muted-foreground">사진 없음</span>
+            <span className="text-xs text-muted-foreground">{t.noCover}</span>
           )}
         </div>
 
@@ -52,7 +55,7 @@ export function CoverImageField({ currentUrl }: { currentUrl: string | null }) {
           onClick={() => inputRef.current?.click()}
           className="rounded-full border border-border px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted"
         >
-          대표사진 변경
+          {t.changeCover}
         </button>
         <input
           ref={inputRef}

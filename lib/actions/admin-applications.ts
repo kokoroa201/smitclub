@@ -14,9 +14,14 @@ type ClubApplicationRow = {
   club_name_en: string | null;
   category: string;
   purpose: string;
+  purpose_en: string | null;
+  activity_plan: string;
+  activity_plan_en: string | null;
   meeting_day: string | null;
+  meeting_day_en: string | null;
   meeting_time: string | null;
   meeting_location: string | null;
+  meeting_location_en: string | null;
   established_at: string | null;
   status: string;
   advisor_name: string | null;
@@ -201,7 +206,7 @@ export async function approveApplication(applicationId: string, formData: FormDa
   const { data, error: fetchError } = await supabase
     .from("club_applications")
     .select(
-      "id, applicant_id, club_name, club_name_en, category, purpose, meeting_day, meeting_time, meeting_location, established_at, status, advisor_name, advisor_department, president_profile_id",
+      "id, applicant_id, club_name, club_name_en, category, purpose, purpose_en, activity_plan, activity_plan_en, meeting_day, meeting_day_en, meeting_time, meeting_location, meeting_location_en, established_at, status, advisor_name, advisor_department, president_profile_id",
     )
     .eq("id", applicationId)
     .single();
@@ -246,9 +251,14 @@ export async function approveApplication(applicationId: string, formData: FormDa
       category: application.category,
       status: "recruiting",
       description: application.purpose,
+      description_en: application.purpose_en,
+      activities: application.activity_plan,
+      activities_en: application.activity_plan_en,
       meeting_day: application.meeting_day,
+      meeting_day_en: application.meeting_day_en,
       meeting_time: application.meeting_time,
       meeting_location: application.meeting_location,
+      meeting_location_en: application.meeting_location_en,
       founded_year: application.established_at ? new Date(application.established_at).getFullYear() : null,
       president_id: presidentProfile?.id ?? null,
       advisor_name: application.advisor_name,

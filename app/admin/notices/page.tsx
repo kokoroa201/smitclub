@@ -27,12 +27,15 @@ type SyncRunRow = {
 
 const SYNC_TARGET_LABEL: Record<string, string> = {
   school_academic_notice: "학사공지",
+  school_news: "학교소식",
   academic_calendar: "학사일정",
 };
 
 function toDateInputValue(iso: string): string {
   return iso.slice(0, 10);
 }
+
+export const maxDuration = 300;
 
 export default async function AdminNoticesPage(props: PageProps<"/admin/notices">) {
   const searchParams = await props.searchParams;
@@ -44,7 +47,7 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const [{ data: councilData }, { data: academicData }, { data: syncData }] = await Promise.all([
+  const [{ data: councilData }, { data: academicData }, { data: syncData }, { data: schoolData }] = await Promise.all([
     supabase
       .from("notices")
       .select("id, title, body, source_url, published_at")
@@ -64,6 +67,8 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
       .order("ran_at", { ascending: false })
       .limit(20)
       .returns<SyncRunRow[]>(),
+    supabase.from("notices").select("id,title,published_at,source_url").eq("source", "school_news")
+      .order("published_at", { ascending: false }).limit(5).returns<AcademicNoticeRow[]>(),
   ]);
 
   const councilNotices = councilData ?? [];
@@ -79,7 +84,7 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <h1 className="text-2xl font-bold text-foreground">공지·소식 관리</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        원우회 공지는 여기서 직접 작성·수정·삭제합니다. 학사공지·학사일정은 매일 자동으로 학교 사이트에서
+        원우회 공지는 여기서 직접 작성·수정·삭제합니다. 학사공지·학교소식·학사일정은 매일 자동으로 학교 사이트에서
         가져오며, 이 화면에서 수정·삭제할 수 없습니다.
       </p>
 
@@ -100,7 +105,7 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
           </form>
         </div>
         <div className="mt-3 flex flex-col gap-2">
-          {["school_academic_notice", "academic_calendar"].map((target) => {
+          {["school_academic_notice", "school_news", "academic_calendar"].map((target) => {
             const run = latestSyncByTarget.get(target);
             return (
               <div key={target} className="flex items-center justify-between gap-3 rounded-card border border-border bg-card p-3 text-sm">
@@ -121,7 +126,7 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
                       run.status === "success" ? "bg-blue-soft text-blue-dark" : "bg-coral-soft text-coral-dark"
                     }`}
                   >
-                    {run.status === "success" ? "정상" : "오류"}
+                    {run.status === "success" ? (run.error_message ? "확인 필요" : "정상") : "오류"}
                   </span>
                 )}
               </div>
@@ -216,20 +221,25 @@ export default async function AdminNoticesPage(props: PageProps<"/admin/notices"
         </div>
       </section>
 
-      <section className="mt-8 border-t border-border pt-8">
-        <h2 className="text-lg font-bold text-foreground">최근 학사공지 (자동 수집, 수정 불가)</h2>
-        <div className="mt-3 flex flex-col gap-2">
-          {academicNotices.length === 0 && (
-            <p className="text-sm text-muted-foreground">아직 수집된 학사공지가 없습니다.</p>
-          )}
-          {academicNotices.map((notice) => (
-            <div key={notice.id} className="flex items-center justify-between gap-3 rounded-card border border-border bg-card p-3">
-              <p className="min-w-0 truncate text-sm text-foreground">{notice.title}</p>
-              <span className="shrink-0 text-xs text-muted-foreground">{toDateInputValue(notice.published_at)}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {[
+        { label: "학사공지", rows: academicNotices },
+        { label: "학교소식", rows: schoolData ?? [] },
+      ].map(({ label, rows }) => (
+        <section key={label} className="mt-8 border-t border-border pt-8">
+          <h2 className="text-lg font-bold text-foreground">최근 {label} (자동 수집, 수정 불가)</h2>
+          <div className="mt-3 flex flex-col gap-2">
+            {rows.length === 0 && (
+              <p className="text-sm text-muted-foreground">아직 수집된 {label}이 없습니다.</p>
+            )}
+            {rows.map((notice) => (
+              <div key={notice.id} className="flex items-center justify-between gap-3 rounded-card border border-border bg-card p-3">
+                <p className="min-w-0 truncate text-sm text-foreground">{notice.title}</p>
+                <span className="shrink-0 text-xs text-muted-foreground">{toDateInputValue(notice.published_at)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
     </main>
   );
 }

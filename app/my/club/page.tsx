@@ -1,3 +1,6 @@
+import { clubName, fill, getDictionary } from "@/lib/i18n";
+import { formatDate } from "@/lib/i18n/format";
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -15,13 +18,18 @@ type MyClub = {
   name: string;
   name_en: string | null;
   description: string | null;
+  description_en: string | null;
   cover_image_url: string | null;
   activities: string | null;
+  activities_en: string | null;
   meeting_day: string | null;
+  meeting_day_en: string | null;
   meeting_time: string | null;
   meeting_location: string | null;
+  meeting_location_en: string | null;
   sns_url: string | null;
   recruiting_post: string | null;
+  recruiting_post_en: string | null;
 };
 
 type MembershipRow = {
@@ -56,23 +64,22 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
 
   const cookieStore = await cookies();
   const locale = await getLocale();
+  const t = getDictionary(locale).clubManage;
   const supabase = createClient(cookieStore);
 
-  const { data: club } = await supabase
-    .from("clubs")
-    .select(
-      "id, slug, name, name_en, description, cover_image_url, activities, meeting_day, meeting_time, meeting_location, sns_url, recruiting_post",
-    )
-    .eq("president_id", profile.id)
-    .maybeSingle<MyClub>();
+  const readClub = (columns: string) => supabase.from("clubs").select(columns).eq("president_id", profile.id).maybeSingle<MyClub>();
+  let clubResult = await readClub("id, slug, name, name_en, description, description_en, cover_image_url, activities, activities_en, meeting_day, meeting_day_en, meeting_time, meeting_location, meeting_location_en, sns_url, recruiting_post, recruiting_post_en");
+  if (clubResult.error?.code === "42703" || clubResult.error?.code === "PGRST204") {
+    clubResult = await readClub("id, slug, name, name_en, description, description_en, cover_image_url, activities, meeting_day, meeting_time, meeting_location, sns_url, recruiting_post");
+  }
+  const club = clubResult.data;
 
   if (!club) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <h1 className="text-2xl font-bold text-foreground">내 동아리 관리</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t.title}</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          현재 회장으로 등록된 동아리가 없습니다. 동아리 개설 신청이 승인되면 이 페이지에서 소개·대표
-          사진·주요 활동·정기 모임·SNS·모집글을 직접 관리할 수 있습니다.
+          {t.noClub}
         </p>
       </main>
     );
@@ -105,30 +112,27 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <Link href={`/clubs/${club.slug}`} className="text-sm font-semibold text-muted-foreground hover:text-foreground">
-        ← {club.name}
-        {club.name_en && ` (${club.name_en})`} 상세 보기
+        {fill(t.back, { name: clubName(club.name, club.name_en, locale) })}
       </Link>
 
-      <h1 className="mt-2 text-2xl font-bold text-foreground">내 동아리 관리</h1>
+      <h1 className="mt-2 text-2xl font-bold text-foreground">{t.title}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        회장으로 등록된 동아리의 소개·대표사진·주요 활동·정기 모임·SNS·모집글만 직접 수정할 수 있습니다.
-        동아리명·카테고리·운영 상태·지도교수 정보 등은 학교(관리자) 승인이 필요한 항목이라 여기서 바꿀
-        수 없습니다.
+        {t.scope}
       </p>
 
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       {success && (
-        <p className="mt-4 rounded-md bg-blue-soft px-3 py-2 text-sm text-blue-dark">저장되었습니다.</p>
+        <p className="mt-4 rounded-md bg-blue-soft px-3 py-2 text-sm text-blue-dark">{t.saved}</p>
       )}
 
       <section className="mt-6">
-        <h2 className="text-lg font-bold text-foreground">가입 신청 관리</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.memberships}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {club.name}에 가입 신청한 학생을 확인하고 승인·거절할 수 있습니다.
+          {fill(t.reviewHint, { name: clubName(club.name, club.name_en, locale) })}
         </p>
 
         {pendingMemberships.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">대기 중인 신청이 없습니다.</p>
+          <p className="mt-4 text-sm text-muted-foreground">{t.noPending}</p>
         ) : (
           <div className="mt-4 flex flex-col gap-3">
             {pendingMemberships.map((membership) => {
@@ -140,13 +144,13 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
               return (
                 <div key={membership.id} className="rounded-card border border-border bg-card p-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="font-bold text-foreground">{membership.profiles?.name ?? "알 수 없음"}</p>
+                    <p className="font-bold text-foreground">{membership.profiles?.name ?? t.unknown}</p>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(membership.applied_at).toLocaleDateString("ko-KR")}
+                      {formatDate(membership.applied_at, locale)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    학번 {applicantPrivate?.student_id || "-"} · 학과 {department}
+                    {t.studentId} {applicantPrivate?.student_id || "-"} {t.department} {department}
                   </p>
                   {membership.motivation && (
                     <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{membership.motivation}</p>
@@ -157,7 +161,7 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
                         type="submit"
                         className="rounded-full bg-coral px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
                       >
-                        승인
+                        {t.approve}
                       </button>
                     </form>
                     <form action={reject}>
@@ -165,7 +169,7 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
                         type="submit"
                         className="rounded-full border border-border px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted"
                       >
-                        거절
+                        {t.reject}
                       </button>
                     </form>
                   </div>
@@ -177,14 +181,14 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
 
         {decidedMemberships.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-sm font-bold text-muted-foreground">처리 완료</h3>
+            <h3 className="text-sm font-bold text-muted-foreground">{t.reviewed}</h3>
             <div className="mt-2 flex flex-col gap-2">
               {decidedMemberships.map((membership) => (
                 <div
                   key={membership.id}
                   className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
                 >
-                  <span className="text-foreground">{membership.profiles?.name ?? "알 수 없음"}</span>
+                  <span className="text-foreground">{membership.profiles?.name ?? t.unknown}</span>
                   <MembershipStatusBadge status={membership.status} locale={locale} />
                 </div>
               ))}
@@ -194,60 +198,83 @@ export default async function MyClubManagePage(props: PageProps<"/my/club">) {
       </section>
 
       <div className="mt-10 border-t border-border pt-8">
-        <h2 className="text-lg font-bold text-foreground">동아리 정보 수정</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.edit}</h2>
       </div>
 
       <form action={updateMyClubWithId} className="mt-4 flex flex-col gap-5">
+        <p className={hintClass}>{t.fallbackHint}</p>
         <label className={labelClass}>
-          소개
-          <span className={hintClass}>동아리를 처음 보는 학생에게 보여줄 한두 문단 설명입니다.</span>
+          {t.description}
+          <span className={hintClass}>{t.descriptionHint}</span>
           <textarea name="description" rows={4} defaultValue={club.description ?? ""} className={inputClass} />
         </label>
+        <label className={labelClass}>
+          {t.descriptionEn}
+          <textarea name="description_en" rows={4} defaultValue={club.description_en ?? ""} className={inputClass} />
+        </label>
 
-        <CoverImageField currentUrl={club.cover_image_url} />
+        <CoverImageField currentUrl={club.cover_image_url} locale={locale} />
 
         <label className={labelClass}>
-          주요 활동
-          <span className={hintClass}>정기 모임 외에 어떤 활동을 하는 동아리인지 자유롭게 적어주세요. (예: 주 1회 정기 모임 · 주제 토론 · 한국 문화 체험)</span>
+          {t.activities}
+          <span className={hintClass}>{t.activitiesHint}</span>
           <textarea name="activities" rows={3} defaultValue={club.activities ?? ""} className={inputClass} />
+        </label>
+        <label className={labelClass}>
+          {t.activitiesEn}
+          <textarea name="activities_en" rows={3} defaultValue={club.activities_en ?? ""} className={inputClass} />
         </label>
 
         <div className={labelClass}>
-          정기 모임 (선택)
-          <span className={hintClass}>실제로 정해진 요일·시간·장소가 있을 때만 입력하세요. 없으면 비워두면 됩니다.</span>
+          {t.meeting}
+          <span className={hintClass}>{t.meetingHint}</span>
           <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className={labelClass}>
-              요일
-              <input name="meeting_day" placeholder="예: 매주 화요일" defaultValue={club.meeting_day ?? ""} className={inputClass} />
+              {t.day}
+              <input name="meeting_day" placeholder={t.dayPlaceholder} defaultValue={club.meeting_day ?? ""} className={inputClass} />
             </label>
             <label className={labelClass}>
-              시간
-              <input name="meeting_time" placeholder="예: 18:00" defaultValue={club.meeting_time ?? ""} className={inputClass} />
+              {t.time}
+              <input name="meeting_time" placeholder={t.timePlaceholder} defaultValue={club.meeting_time ?? ""} className={inputClass} />
             </label>
             <label className={labelClass}>
-              장소
-              <input name="meeting_location" placeholder="예: 학생휴게실" defaultValue={club.meeting_location ?? ""} className={inputClass} />
+              {t.location}
+              <input name="meeting_location" placeholder={t.locationPlaceholder} defaultValue={club.meeting_location ?? ""} className={inputClass} />
+            </label>
+          </div>
+          <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className={labelClass}>
+              {t.dayEn}
+              <input name="meeting_day_en" defaultValue={club.meeting_day_en ?? ""} className={inputClass} />
+            </label>
+            <label className={labelClass}>
+              {t.locationEn}
+              <input name="meeting_location_en" defaultValue={club.meeting_location_en ?? ""} className={inputClass} />
             </label>
           </div>
         </div>
 
         <label className={labelClass}>
-          SNS 링크
-          <span className={hintClass}>인스타그램, 오픈채팅 등 학생들이 찾아볼 수 있는 링크입니다.</span>
+          {t.social}
+          <span className={hintClass}>{t.socialHint}</span>
           <input type="url" name="sns_url" placeholder="https://" defaultValue={club.sns_url ?? ""} className={inputClass} />
         </label>
 
         <label className={labelClass}>
-          모집글
-          <span className={hintClass}>신입 부원 모집 중이라면 안내 문구를 적어주세요. 비워두면 공개 페이지에 표시되지 않습니다.</span>
+          {t.recruitment}
+          <span className={hintClass}>{t.recruitmentHint}</span>
           <textarea name="recruiting_post" rows={4} defaultValue={club.recruiting_post ?? ""} className={inputClass} />
+        </label>
+        <label className={labelClass}>
+          {t.recruitmentEn}
+          <textarea name="recruiting_post_en" rows={4} defaultValue={club.recruiting_post_en ?? ""} className={inputClass} />
         </label>
 
         <button
           type="submit"
           className="w-fit rounded-full bg-coral px-4 py-2.5 font-bold text-white transition-opacity hover:opacity-90"
         >
-          저장
+          {t.save}
         </button>
       </form>
     </main>

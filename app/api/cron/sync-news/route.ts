@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { runNewsSync } from "@/lib/news-sync/run-sync";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // Vercel Cron이 매일 KST 09:00·13:00(vercel.json: UTC 0시·4시)에 두 번
 // 호출한다. Authorization: Bearer ${CRON_SECRET} 헤더가 일치할 때만 실행 —
@@ -14,6 +14,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const summary = await runNewsSync();
-  return NextResponse.json(summary);
+  try {
+    const summary = await runNewsSync();
+    const failed = Object.values(summary).some((result) => result.status === "error");
+    return NextResponse.json(summary, { status: failed ? 500 : 200 });
+  } catch (err) {
+    console.error("News sync failed", err);
+    return NextResponse.json({ error: "News sync failed. Check server configuration and logs." }, { status: 500 });
+  }
 }

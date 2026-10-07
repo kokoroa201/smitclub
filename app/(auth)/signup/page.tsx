@@ -1,8 +1,13 @@
+import { getDictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
 import Link from "next/link";
 import { signUp } from "@/lib/actions/auth";
 import { DEPARTMENT_GROUPS } from "@/lib/constants/departments";
 
 export default async function SignupPage(props: PageProps<"/signup">) {
+  const locale = await getLocale();
+  const t = getDictionary(locale).account;
+  const clubLabels = getDictionary(locale).clubApplication;
   const params = await props.searchParams;
   const error = typeof params.error === "string" ? params.error : null;
   const name = typeof params.name === "string" ? params.name : "";
@@ -14,15 +19,15 @@ export default async function SignupPage(props: PageProps<"/signup">) {
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-sm flex-col justify-center gap-6 px-4 py-12">
       <div>
-        <h1 className="text-2xl font-bold">회원가입</h1>
+        <h1 className="text-2xl font-bold">{t.signup}</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          이름, 학번, 학과, 연락처만 알려주시면 바로 시작할 수 있어요.
+          {t.signupIntro}
         </p>
       </div>
 
       <form action={signUp} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          이름
+          {t.name}
           <input
             type="text"
             name="name"
@@ -32,7 +37,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          학번
+          {t.studentId}
           <input
             type="text"
             name="student_id"
@@ -41,18 +46,18 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          학과·전공 Department / Program
+          {t.department}
           <select
             name="department"
             defaultValue={department}
             className="rounded-md border border-neutral-300 px-3 py-2"
           >
-            <option value="">선택 안 함</option>
-            {DEPARTMENT_GROUPS.map((group) => (
-              <optgroup key={group.label} label={group.label}>
+            <option value="">{t.none}</option>
+            {DEPARTMENT_GROUPS.map((group, index) => (
+              <optgroup key={group.label} label={index === 0 ? clubLabels.koreanPrograms : clubLabels.englishPrograms}>
                 {group.options.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {(clubLabels.departments as Record<string, string>)[option] ?? option}
                   </option>
                 ))}
               </optgroup>
@@ -60,17 +65,17 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          연락처 Contact
+          {t.contact}
           <input
             type="text"
             name="contact"
-            placeholder="숫자만 입력 (예: 01012345678)"
+            placeholder={t.contactPlaceholder}
             defaultValue={contact}
             className="rounded-md border border-neutral-300 px-3 py-2"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          이메일
+          {t.email}
           <input
             type="email"
             name="email"
@@ -80,7 +85,7 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          비밀번호
+          {t.password}
           <input
             type="password"
             name="password"
@@ -88,10 +93,10 @@ export default async function SignupPage(props: PageProps<"/signup">) {
             minLength={6}
             className="rounded-md border border-neutral-300 px-3 py-2"
           />
-          <span className="text-xs text-neutral-500">6자 이상 입력해주세요.</span>
+          <span className="text-xs text-neutral-500">{t.passwordHint}</span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          비밀번호 확인
+          {t.confirmPassword}
           <input
             type="password"
             name="password_confirm"
@@ -109,14 +114,14 @@ export default async function SignupPage(props: PageProps<"/signup">) {
           type="submit"
           className="rounded-md bg-orange-500 px-4 py-2 font-medium text-white hover:bg-orange-600"
         >
-          가입하기
+          {t.createAccount}
         </button>
       </form>
 
       <p className="text-sm text-neutral-500">
-        이미 계정이 있으신가요?{" "}
+        {t.hasAccount}{" "}
         <Link href="/login" className="text-orange-600 underline">
-          로그인
+          {t.login}
         </Link>
       </p>
     </main>

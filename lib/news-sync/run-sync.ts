@@ -1,109 +1,93 @@
 import { createAdminClient } from "@/utils/supabase/admin";
-import { scrapeNoticeList, scrapeNoticeSummary } from "./scrape-notices";
+import { NOTICE_LIST_URL, scrapeNoticePage, scrapeNoticeDetail, type ScrapedNoticeListItem } from "./scrape-notices";
+import { SCHOOL_NEWS_LIST_URL } from "./scrape-school-news";
 import { scrapeAcademicCalendar } from "./scrape-calendar";
 
-export type SyncTargetResult = { status: "success" | "error"; fetchedCount: number; error?: string };
-export type SyncSummary = { notices: SyncTargetResult; calendar: SyncTargetResult };
+export type SyncTargetResult = { status: "success" | "error"; fetchedCount: number; error?: string; warning?: string };
+export type SyncSummary = { notices: SyncTargetResult; schoolNews: SyncTargetResult; calendar: SyncTargetResult };
+type Admin = NonNullable<ReturnType<typeof createAdminClient>>;
+const message = (err: unknown) => err instanceof Error ? err.message : "알 수 없는 오류";
 
-// 학교 학사공지/학사일정을 하루 2회(KST 09:00·13:00) 가져와 upsert한다
-// (app/api/cron/sync-news에서만 호출, /admin/notices의 "지금 동기화" 버튼도
-// 동일 함수를 즉시 호출한다). 실패해도 기존 데이터는 절대 지우지 않는다 —
-// insert/upsert만 하고 delete는 어디에도 없다. 각 대상(공지/일정)은 서로
-// 독립적으로 성공·실패하며, 결과는 news_sync_runs에 기록해 관리자 화면에서
-// 확인할 수 있게 한다. 실패한 회차를 별도로 재시도하지는 않는다(다음
-// 예정된 배치가 다시 시도).
-export async function runNewsSync(): Promise<SyncSummary> {
-  const admin = createAdminClient();
-  if (!admin) {
-    throw new Error("SUPABASE_SECRET_KEY가 설정되어 있지 않습니다.");
-  }
-
-  const summary: SyncSummary = {
-    notices: { status: "error", fetchedCount: 0 },
-    calendar: { status: "error", fetchedCount: 0 },
-  };
-
+async function syncBoard(admin: Admin, source: "school_academic" | "school_news", target: string, url: string): Promise<SyncTargetResult> {
+  let count = 0;
   try {
-    const list = await scrapeNoticeList();
-    let upserted = 0;
-    let firstError: string | undefined;
-
-    for (const item of list) {
-      const summaryText = await scrapeNoticeSummary(item.sourceUrl);
-      const { error } = await admin.from("notices").upsert(
-        {
-          source: "school_academic",
-          title: item.title,
-          summary: summaryText,
-          source_url: item.sourceUrl,
-          published_at: item.publishedAt,
-          external_id: item.externalId,
-        },
-        { onConflict: "source,external_id" },
-      );
-      if (error) firstError ??= error.message;
-      else upserted += 1;
+    const { data: state, error: stateError } = await admin.from("news_sync_state").select("next_page").eq("target", target).maybeSingle();
+    if (stateError) throw new Error(`수집 상태 조회 실패: ${stateError.message}`);
+    const first = await scrapeNoticePage(url);
+    const items = new Map<string, ScrapedNoticeListItem>(first.items.map((item) => [item.externalId, item]));
+    let nextPage = state?.next_page ?? 2;
+    if (first.hasNext) {
+      // Always refresh recent posts; sweep two archive pages per run, then wrap.
+      for (let i = 0; i < 2; i++) {
+        const page = await scrapeNoticePage(url, nextPage);
+        for (const item of page.items) items.set(item.externalId, item);
+        if (!page.hasNext) { nextPage = 2; break; }
+        nextPage++;
+      }
+    } else nextPage = 2;
+    const { data: existing, error: lookupError } = await admin.from("notices").select("external_id,title").eq("source", source).in("external_id", [...items.keys()]);
+    if (lookupError) throw new Error(`기존 공지 조회 실패: ${lookupError.message}`);
+    const titles = new Map((existing ?? []).map((row) => [row.external_id, row.title]));
+    const warnings = new Set<string>();
+    const failures: string[] = [];
+    const queue = [...items.values()];
+    await Promise.all(Array.from({ length: 4 }, async () => {
+      while (queue.length) {
+        const item = queue.shift()!;
+        let detail: Awaited<ReturnType<typeof scrapeNoticeDetail>> | undefined;
+        try { detail = await scrapeNoticeDetail(item.sourceUrl); }
+        catch (err) { warnings.add(`상세 수집 실패: ${message(err)}`); }
+        const changed = titles.get(item.externalId) !== item.title;
+        const { error } = await admin.from("notices").upsert({
+          source, title: item.title, source_url: item.sourceUrl, published_at: item.publishedAt, external_id: item.externalId,
+          ...(changed ? { title_en: null, title_en_source: null } : {}),
+          // Preserve previously collected metadata if a detail request fails.
+          ...(detail ? { summary: detail.summary, attachment_names: detail.attachmentNames, has_en_attachment: detail.hasEnAttachment } : {}),
+        }, { onConflict: "source,external_id" });
+        if (error) failures.push(error.message);
+        else count++;
+      }
+    }));
+    // Do not move the archive cursor past failed saves/details.
+    if (!failures.length && !warnings.size) {
+      const { error } = await admin.from("news_sync_state").upsert({ target, next_page: nextPage });
+      if (error) failures.push(error.message);
     }
+    if (failures.length) throw new Error(`${failures.length}건 저장 실패: ${failures[0]}`);
+    return { status: "success", fetchedCount: count, ...(warnings.size ? { warning: [...warnings].join(" · ") } : {}) };
+  } catch (err) { return { status: "error", fetchedCount: count, error: message(err) }; }
+}
 
-    // 개별 upsert 실패를 삼키면 "성공 0건"처럼 보여 원인을 알 수 없다.
-    if (upserted === 0 && firstError) throw new Error(`저장 실패: ${firstError}`);
-
-    summary.notices = { status: "success", fetchedCount: upserted };
-    await admin.from("news_sync_runs").insert({
-      target: "school_academic_notice",
-      status: "success",
-      fetched_count: upserted,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "알 수 없는 오류";
-    summary.notices = { status: "error", fetchedCount: 0, error: message };
-    await admin.from("news_sync_runs").insert({
-      target: "school_academic_notice",
-      status: "error",
-      fetched_count: 0,
-      error_message: message,
-    });
-  }
-
+async function syncCalendar(admin: Admin): Promise<SyncTargetResult> {
+  let count = 0;
   try {
     const { events, skipped } = await scrapeAcademicCalendar();
-    let upserted = 0;
-    let firstError: string | undefined;
-
     for (const event of events) {
-      const { error } = await admin.from("academic_calendar_events").upsert(
-        {
-          title: event.title,
-          starts_on: event.startsOn,
-          ends_on: event.endsOn,
-          source_url: event.sourceUrl,
-          external_id: event.externalId,
-        },
-        { onConflict: "external_id" },
-      );
-      if (error) firstError ??= error.message;
-      else upserted += 1;
+      const { error } = await admin.from("academic_calendar_events").upsert({ title: event.title, starts_on: event.startsOn, ends_on: event.endsOn, source_url: event.sourceUrl, external_id: event.externalId }, { onConflict: "external_id" });
+      if (error) throw new Error(`학사일정 저장 실패: ${error.message}`);
+      count++;
     }
+    return { status: "success", fetchedCount: count, ...(skipped ? { warning: `${skipped}건 형식을 인식하지 못해 건너뜀` } : {}) };
+  } catch (err) { return { status: "error", fetchedCount: count, error: message(err) }; }
+}
 
-    if (upserted === 0 && firstError) throw new Error(`저장 실패: ${firstError}`);
-
-    summary.calendar = { status: "success", fetchedCount: upserted };
-    await admin.from("news_sync_runs").insert({
-      target: "academic_calendar",
-      status: "success",
-      fetched_count: upserted,
-      error_message: skipped > 0 ? `${skipped}건 형식을 인식하지 못해 건너뜀` : null,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "알 수 없는 오류";
-    summary.calendar = { status: "error", fetchedCount: 0, error: message };
-    await admin.from("news_sync_runs").insert({
-      target: "academic_calendar",
-      status: "error",
-      fetched_count: 0,
-      error_message: message,
-    });
+export async function runNewsSync(): Promise<SyncSummary> {
+  const admin = createAdminClient();
+  if (!admin) throw new Error("SUPABASE_SECRET_KEY가 설정되어 있지 않습니다.");
+  // Independent sources; failures never delete stored posts or affect Council.
+  const targets = ["school_academic_notice", "school_news", "academic_calendar"];
+  const results = await Promise.all([
+    syncBoard(admin, "school_academic", targets[0], NOTICE_LIST_URL),
+    syncBoard(admin, "school_news", targets[1], SCHOOL_NEWS_LIST_URL),
+    syncCalendar(admin),
+  ]);
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const { error } = await admin.from("news_sync_runs").insert({ target: targets[i], status: result.status, fetched_count: result.fetchedCount, error_message: result.error ?? result.warning ?? null });
+    if (error) {
+      result.status = "error";
+      result.error = `${result.error ? `${result.error} · ` : ""}동기화 로그 저장 실패: ${error.message}`;
+    }
   }
-
-  return summary;
+  return { notices: results[0], schoolNews: results[1], calendar: results[2] };
 }

@@ -1,5 +1,8 @@
 "use server";
 
+import { getDictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { randomUUID } from "node:crypto";
@@ -37,6 +40,7 @@ function coverStoragePath(url: string | null): string | null {
 // 동아리 폴더만)가 이중 삼중으로 막아준다 — 여기서 clubId를 다른 동아리로
 // 바꿔 호출해도 DB가 거부한다.
 export async function updateMyClub(clubId: string, formData: FormData) {
+  const t = getDictionary(await getLocale()).clubManage;
   const profile = await getCurrentProfile();
   if (!profile) {
     redirect("/login");
@@ -52,7 +56,7 @@ export async function updateMyClub(clubId: string, formData: FormData) {
     .single();
 
   if (!club || club.president_id !== profile.id) {
-    redirect(`/my/club?error=${encodeURIComponent("본인이 회장으로 등록된 동아리만 수정할 수 있습니다.")}`);
+    redirect(`/my/club?error=${encodeURIComponent(t.errors.notPresident)}`);
   }
 
   const description = field(formData, "description");
@@ -73,10 +77,10 @@ export async function updateMyClub(clubId: string, formData: FormData) {
     const ext = COVER_MIME_EXT[file.type];
 
     if (!ext) {
-      redirect(`/my/club?error=${encodeURIComponent("대표사진은 JPG, PNG, WebP 파일만 업로드할 수 있습니다.")}`);
+      redirect(`/my/club?error=${encodeURIComponent(t.errors.invalidCover)}`);
     }
     if (file.size > MAX_COVER_BYTES) {
-      redirect(`/my/club?error=${encodeURIComponent("대표사진은 5MB 이하 파일만 업로드할 수 있습니다.")}`);
+      redirect(`/my/club?error=${encodeURIComponent(t.errors.largeCover)}`);
     }
 
     const path = `${clubId}/${randomUUID()}.${ext}`;
@@ -87,7 +91,7 @@ export async function updateMyClub(clubId: string, formData: FormData) {
 
     if (uploadError) {
       console.error("cover image upload failed", uploadError);
-      redirect(`/my/club?error=${encodeURIComponent("대표사진 업로드 중 오류가 발생했습니다.")}`);
+      redirect(`/my/club?error=${encodeURIComponent(t.errors.uploadFailed)}`);
     }
 
     newCoverUrl = supabase.storage.from(COVER_BUCKET).getPublicUrl(path).data.publicUrl;
@@ -96,20 +100,25 @@ export async function updateMyClub(clubId: string, formData: FormData) {
   const { error } = await supabase
     .from("clubs")
     .update({
-      description: description || null,
-      activities: activities || null,
-      meeting_day: meetingDay || null,
-      meeting_time: meetingTime || null,
-      meeting_location: meetingLocation || null,
-      sns_url: snsUrl || null,
-      recruiting_post: recruitingPost || null,
+      description: formData.has("description") ? description || null : undefined,
+      description_en: formData.has("description_en") ? field(formData, "description_en") || null : undefined,
+      activities: formData.has("activities") ? activities || null : undefined,
+      activities_en: formData.has("activities_en") ? field(formData, "activities_en") || null : undefined,
+      meeting_day: formData.has("meeting_day") ? meetingDay || null : undefined,
+      meeting_day_en: formData.has("meeting_day_en") ? field(formData, "meeting_day_en") || null : undefined,
+      meeting_time: formData.has("meeting_time") ? meetingTime || null : undefined,
+      meeting_location: formData.has("meeting_location") ? meetingLocation || null : undefined,
+      meeting_location_en: formData.has("meeting_location_en") ? field(formData, "meeting_location_en") || null : undefined,
+      sns_url: formData.has("sns_url") ? snsUrl || null : undefined,
+      recruiting_post: formData.has("recruiting_post") ? recruitingPost || null : undefined,
+      recruiting_post_en: formData.has("recruiting_post_en") ? field(formData, "recruiting_post_en") || null : undefined,
       ...(newCoverUrl ? { cover_image_url: newCoverUrl } : {}),
     })
     .eq("id", clubId);
 
   if (error) {
     console.error("clubs update failed", error);
-    redirect(`/my/club?error=${encodeURIComponent("동아리 정보 저장 중 오류가 발생했습니다.")}`);
+    redirect(`/my/club?error=${encodeURIComponent(t.errors.saveFailed)}`);
   }
 
   if (newCoverUrl) {

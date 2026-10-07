@@ -21,9 +21,12 @@ function toClubCardData(club: {
   name_en: string | null;
   category: string;
   description: string | null;
+  description_en: string | null;
   cover_image_url: string | null;
   meeting_day: string | null;
+  meeting_day_en: string | null;
   meeting_location: string | null;
+  meeting_location_en: string | null;
 }): ClubCardData {
   return {
     slug: club.slug,
@@ -31,9 +34,12 @@ function toClubCardData(club: {
     nameEn: club.name_en,
     category: club.category,
     description: club.description,
+    descriptionEn: club.description_en,
     coverImageUrl: club.cover_image_url,
     meetingDay: club.meeting_day,
+    meetingDayEn: club.meeting_day_en,
     meetingLocation: club.meeting_location,
+    meetingLocationEn: club.meeting_location_en,
   };
 }
 
@@ -42,19 +48,25 @@ async function getRecruitingClubs(): Promise<ClubCardData[]> {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
-    const [{ data }, { data: pinned }] = await Promise.all([
+    const readClubs = (columns: string) => Promise.all([
       supabase
         .from("clubs")
-        .select("slug, name, name_en, category, description, cover_image_url, meeting_day, meeting_location")
+        .select(columns)
         .eq("status", "recruiting")
         .order("created_at", { ascending: false })
-        .limit(5),
+        .limit(5).returns<Parameters<typeof toClubCardData>[0][]>(),
       supabase
         .from("clubs")
-        .select("slug, name, name_en, category, description, cover_image_url, meeting_day, meeting_location")
+        .select(columns)
         .eq("slug", PINNED_CLUB_SLUG)
-        .maybeSingle(),
+        .maybeSingle<Parameters<typeof toClubCardData>[0]>(),
     ]);
+    let [recent, featured] = await readClubs("slug, name, name_en, category, description, description_en, cover_image_url, meeting_day, meeting_day_en, meeting_location, meeting_location_en");
+    if ([recent.error?.code, featured.error?.code].some((code) => code === "42703" || code === "PGRST204")) {
+      [recent, featured] = await readClubs("slug, name, name_en, category, description, description_en, cover_image_url, meeting_day, meeting_location");
+    }
+    const data = recent.data;
+    const pinned = featured.data;
 
     const clubs = (data ?? []).map(toClubCardData);
 

@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Bell, Compass, FileText, Home, Newspaper, UserRound } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
@@ -23,6 +26,11 @@ export function SiteHeader({
   locale: Locale;
 }) {
   const t = getDictionary(locale).nav;
+  const pathname = usePathname();
+  const isActive = (href: string) => href === "/" ? pathname === "/"
+    : href === "/club-rules" ? pathname === "/club-rules" || pathname === "/clubs/new"
+    : href === "/clubs" && pathname === "/clubs/new" ? false
+    : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur print:hidden">
@@ -49,7 +57,8 @@ export function SiteHeader({
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:gap-1.5 lg:px-4 lg:py-2 lg:text-sm"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-1.5 text-xs transition-colors hover:bg-muted lg:gap-1.5 lg:px-4 lg:py-2 lg:text-sm ${isActive(link.href) ? "font-bold text-coral-dark" : "font-medium text-muted-foreground hover:text-foreground"}`}
               >
                 <link.icon className="hidden h-4 w-4 shrink-0 lg:block" />
                 {t[link.labelKey]}

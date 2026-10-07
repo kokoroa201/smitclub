@@ -1,85 +1,62 @@
 import * as cheerio from "cheerio";
+export const NOTICE_LIST_URL = "https://smit.ac.kr/bbs/board.php?bo_table=notice";
+export const SCHOOL_NEWS_LIST_URL = "https://smit.ac.kr/eng/bbs/board.php?bo_table=news";
+export type ScrapedNoticeListItem = { externalId: string; title: string; publishedAt: string; sourceUrl: string };
 
-const NOTICE_LIST_URL = "https://smit.ac.kr/bbs/board.php?bo_table=notice";
-const MAX_SUMMARY_LENGTH = 220;
-
-export type ScrapedNoticeListItem = {
-  externalId: string;
-  title: string;
-  publishedAt: string;
-  sourceUrl: string;
-};
-
-async function fetchHtml(url: string): Promise<string> {
+export async function fetchSchoolHtml(url: string): Promise<string> {
+  if (new URL(url).origin !== "https://smit.ac.kr") throw new Error("학교 외부 URL은 수집할 수 없습니다.");
   const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (compatible; SmitClubBot/1.0)" },
-    cache: "no-store",
+    cache: "no-store", signal: AbortSignal.timeout(12_000), redirect: "error",
   });
-  if (!res.ok) {
-    throw new Error(`요청 실패: ${url} (HTTP ${res.status})`);
-  }
+  if (!res.ok) throw new Error(`학교 요청 실패 (HTTP ${res.status})`);
   return res.text();
 }
 
-// 목록 첫 페이지만 가져온다 — 매일 도는 배치라 새 글은 항상 1페이지 안에
-// 들어오고, external_id(wr_id) 기준 upsert라 매번 다시 가져와도 안전하다.
-// 학교 사이트에 불필요한 페이지네이션 요청을 반복하지 않기 위함이기도 하다.
-export async function scrapeNoticeList(): Promise<ScrapedNoticeListItem[]> {
-  const html = await fetchHtml(NOTICE_LIST_URL);
+export function parseNoticeList(html: string, listUrl: string, page = 1) {
   const $ = cheerio.load(html);
-
-  const items: ScrapedNoticeListItem[] = [];
-
+  const board = new URL(listUrl).searchParams.get("bo_table");
+  const items = new Map<string, ScrapedNoticeListItem>();
   $("table tbody tr").each((_, row) => {
     const link = $(row).find("td.tleft a[href*='wr_id=']").first();
-    if (link.length === 0) return;
-
-    const href = link.attr("href") ?? "";
-    const wrIdMatch = href.match(/wr_id=(\d+)/);
-    if (!wrIdMatch) return;
-
+    if (!link.length) return;
+    const url = new URL(link.attr("href") ?? "", listUrl);
+    const id = url.searchParams.get("wr_id");
+    if (url.origin !== "https://smit.ac.kr" || url.searchParams.get("bo_table") !== board || !id?.match(/^\d+$/)) return;
     const title = link.text().replace(/\s+/g, " ").trim();
-    const dateText = $(row).find("td.tdata").first().text().trim();
-    if (!title || !dateText) return;
-
-    items.push({
-      externalId: wrIdMatch[1],
-      title,
-      publishedAt: `${dateText}T00:00:00+09:00`,
-      sourceUrl: href.startsWith("http") ? href : `https://smit.ac.kr${href}`,
-    });
+    const date = $(row).find("td.tdata").first().text().trim();
+    if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) return;
+    items.set(id, { externalId: id, title, publishedAt: `${date}T00:00:00+09:00`, sourceUrl: url.href });
   });
-
-  // 0건은 정상일 수 없다(고정 공지만 해도 여러 건) — 사이트 구조 변경이나
-  // 해외 IP 차단으로 다른 페이지를 받은 경우다. "성공 0건"으로 기록되면
-  // 문제가 묻히므로, 받은 페이지의 단서를 담아 에러로 올린다.
-  if (items.length === 0) {
-    const pageTitle = $("title").first().text().trim() || "(제목 없음)";
-    throw new Error(`학사공지 목록을 찾지 못함 — 응답 ${html.length}바이트, 페이지 제목 "${pageTitle}"`);
+  if (!items.size && (page === 1 || !$("table tbody td").text().match(/게시물이 없습니다|No (?:posts|articles|data)/i))) {
+    throw new Error(`게시판 목록 구조를 확인할 수 없음: ${$("title").text().trim()}`);
   }
-
-  return items;
+  const hasNext = $("a[href]").toArray().some((el) => {
+    const url = new URL($(el).attr("href")!, listUrl);
+    return url.origin === "https://smit.ac.kr" && url.searchParams.get("bo_table") === board && Number(url.searchParams.get("page")) > page;
+  });
+  return { items: [...items.values()], hasNext };
 }
 
-// 상세 페이지 본문(.board_view_con, 메뉴·푸터·연락처는 이 컨테이너 밖에 있어
-// 애초에 포함되지 않는다)의 첫 non-empty <p> 텍스트만 최대 220자로 잘라
-// 요약으로 쓴다. 실패하면 null — 호출부가 "요약 없이 제목·날짜·원문 링크만"
-// 표시하도록 둔다. 전문·첨부파일은 절대 저장하지 않는다.
-export async function scrapeNoticeSummary(sourceUrl: string): Promise<string | null> {
-  try {
-    const html = await fetchHtml(sourceUrl);
-    const $ = cheerio.load(html);
+export async function scrapeNoticePage(listUrl: string, page = 1) {
+  const url = new URL(listUrl);
+  url.searchParams.set("page", String(page));
+  return parseNoticeList(await fetchSchoolHtml(url.href), listUrl, page);
+}
 
-    const paragraphs = $(".board_view_con p")
-      .map((_, el) => $(el).text().replace(/\s+/g, " ").trim())
-      .get()
-      .filter((text) => text.length > 0);
+export function hasEnglishAttachment(names: string[]): boolean {
+  // An arbitrary English word alone does not prove English contents.
+  return names.some((name) => /\b(?:english|eng)\b|\bkor[\s_\-/]*en\b|\ben[\s_\-/]*kr\b|한\s*[·/\-]?\s*영|영문/i.test(name.replace(/_/g, " ")));
+}
 
-    if (paragraphs.length === 0) return null;
+export function parseNoticeDetail(html: string) {
+  const $ = cheerio.load(html);
+  if (!$(".board_view_con").length) throw new Error("게시글 상세 구조를 확인할 수 없습니다.");
+  const first = $(".board_view_con p").map((_, el) => $(el).text().replace(/\s+/g, " ").trim()).get().find(Boolean);
+  const attachmentNames = $("a.view_file_download strong").map((_, el) => $(el).text().replace(/\s+/g, " ").trim()).get().filter(Boolean);
+  return { summary: first ? (first.length > 220 ? `${first.slice(0, 220)}…` : first) : null, attachmentNames, hasEnAttachment: hasEnglishAttachment(attachmentNames) };
+}
 
-    const first = paragraphs[0];
-    return first.length > MAX_SUMMARY_LENGTH ? `${first.slice(0, MAX_SUMMARY_LENGTH)}…` : first;
-  } catch {
-    return null;
-  }
+export async function scrapeNoticeDetail(sourceUrl: string) {
+  return parseNoticeDetail(await fetchSchoolHtml(sourceUrl));
 }

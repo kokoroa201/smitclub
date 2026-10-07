@@ -17,7 +17,9 @@ function toClubListItem(club: {
   name_en: string | null;
   category: string;
   description: string | null;
+  description_en: string | null;
   activities: string | null;
+  activities_en: string | null;
   status: string;
   cover_image_url: string | null;
 }): ClubListItem {
@@ -27,7 +29,9 @@ function toClubListItem(club: {
     nameEn: club.name_en,
     category: club.category,
     description: club.description,
+    descriptionEn: club.description_en,
     activities: club.activities,
+    activitiesEn: club.activities_en,
     status: club.status,
     coverImageUrl: club.cover_image_url,
   };
@@ -43,16 +47,23 @@ export default async function ClubsPage(props: PageProps<"/clubs">) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  let query = supabase
-    .from("clubs")
-    .select("slug, name, name_en, category, description, activities, status, cover_image_url")
-    .order("created_at", { ascending: false });
+  const readClubs = (columns: string) => {
+    let query = supabase
+      .from("clubs")
+      .select(columns)
+      .order("created_at", { ascending: false });
 
-  if (statusFilter !== "all") {
-    query = query.eq("status", statusFilter);
+    if (statusFilter !== "all") {
+      query = query.eq("status", statusFilter);
+    }
+
+    return query.returns<Parameters<typeof toClubListItem>[0][]>();
+  };
+  let result = await readClubs("slug, name, name_en, category, description, description_en, activities, activities_en, status, cover_image_url");
+  if (result.error?.code === "42703" || result.error?.code === "PGRST204") {
+    result = await readClubs("slug, name, name_en, category, description, description_en, activities, status, cover_image_url");
   }
-
-  const { data } = await query;
+  const { data } = result;
   const clubs = (data ?? []).map(toClubListItem);
   const locale = await getLocale();
   const t = getDictionary(locale);

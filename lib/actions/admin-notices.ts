@@ -117,8 +117,10 @@ export async function syncNewsNow() {
     const summary = await runNewsSync();
     const parts = [
       `학사공지 ${summary.notices.status === "success" ? `${summary.notices.fetchedCount}건` : `오류(${summary.notices.error})`}`,
+      `학교소식 ${summary.schoolNews.status === "success" ? `${summary.schoolNews.fetchedCount}건` : `오류(${summary.schoolNews.error})`}`,
       `학사일정 ${summary.calendar.status === "success" ? `${summary.calendar.fetchedCount}건` : `오류(${summary.calendar.error})`}`,
     ];
+    for (const result of Object.values(summary)) if (result.warning) parts.push(result.warning);
     redirect(`/admin/notices?synced=${encodeURIComponent(parts.join(" · "))}`);
   } catch (err) {
     if (err && typeof err === "object" && "digest" in err) throw err; // redirect() 자체가 던지는 신호는 그대로 통과

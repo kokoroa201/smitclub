@@ -1,5 +1,8 @@
 "use server";
 
+import { fill, getDictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentProfile } from "@/lib/auth";
@@ -84,9 +87,10 @@ export async function submitClubApplication(
   _prevState: SubmitClubApplicationState,
   formData: FormData,
 ): Promise<SubmitClubApplicationState> {
+  const t = getDictionary(await getLocale()).clubApplication;
   const profile = await getCurrentProfile();
   if (!profile) {
-    return { error: "로그인이 필요합니다.", success: false };
+    return { error: t.errors.loginRequired, success: false };
   }
 
   const clubName = field(formData, "club_name");
@@ -148,41 +152,41 @@ export async function submitClubApplication(
   const founders = parseFounders(formData);
 
   if (!clubName || !clubNameEn || !category || !purpose || !activityPlan) {
-    return { error: "동아리명(국문·영문), 카테고리, 목적, 활동계획은 필수입니다.", success: false };
+    return { error: t.errors.requiredFields, success: false };
   }
 
   if (!REGISTRATION_CATEGORIES.includes(registrationCategory as (typeof REGISTRATION_CATEGORIES)[number])) {
-    return { error: "동아리 구분(운영규정 기준 분류)을 선택해주세요.", success: false };
+    return { error: t.errors.chooseRegistrationCategory, success: false };
   }
 
   if (language !== "ko" && language !== "en" && language !== "mixed") {
-    return { error: "사용 언어를 선택해주세요.", success: false };
+    return { error: t.errors.chooseLanguage, success: false };
   }
 
   if (!establishedAt) {
-    return { error: "설립일을 입력해주세요.", success: false };
+    return { error: t.errors.enterEstablishedDate, success: false };
   }
 
   if (!presidentContact) {
-    return { error: "회장(대표자) 연락처를 입력해주세요.", success: false };
+    return { error: t.errors.enterPresidentContact, success: false };
   }
 
   if (presidentNationalityRaw !== "domestic" && presidentNationalityRaw !== "international") {
-    return { error: "회장 국적을 선택해주세요.", success: false };
+    return { error: t.errors.choosePresidentNationality, success: false };
   }
   const presidentNationality = presidentNationalityRaw;
 
   if (!treasurerName || !treasurerContact) {
-    return { error: "총무 정보(성명, 연락처)를 입력해주세요.", success: false };
+    return { error: t.errors.enterTreasurer, success: false };
   }
 
   if (treasurerNationalityRaw !== "domestic" && treasurerNationalityRaw !== "international") {
-    return { error: "총무 국적을 선택해주세요.", success: false };
+    return { error: t.errors.chooseTreasurerNationality, success: false };
   }
   const treasurerNationality = treasurerNationalityRaw;
 
   if (hasVicePresident && !vicePresidentName) {
-    return { error: "부회장을 두는 경우 성명을 입력해주세요.", success: false };
+    return { error: t.errors.enterVicePresident, success: false };
   }
 
   if (
@@ -191,44 +195,44 @@ export async function submitClubApplication(
     !isValidDepartment(vicePresidentDepartment) ||
     founders.some((f) => !isValidDepartment(f.department))
   ) {
-    return { error: "학과·전공은 제공된 목록에서 선택해주세요.", success: false };
+    return { error: t.errors.chooseDepartment, success: false };
   }
 
   const membershipApprovalDays = Number(membershipApprovalDaysRaw);
   if (!membershipApprovalDaysRaw || !Number.isInteger(membershipApprovalDays) || membershipApprovalDays <= 0) {
-    return { error: "회원 가입 승인 처리 기한(일)을 입력해주세요.", success: false };
+    return { error: t.errors.enterApprovalDays, success: false };
   }
 
   if (!meetingFrequency) {
-    return { error: "정기 모임 빈도를 입력해주세요.", success: false };
+    return { error: t.errors.enterFrequency, success: false };
   }
 
   let membershipFeeAmount: number | null = null;
   if (hasMembershipFee) {
     membershipFeeAmount = Number(membershipFeeAmountRaw);
     if (!membershipFeeAmountRaw || !Number.isInteger(membershipFeeAmount) || membershipFeeAmount <= 0 || !membershipFeeCycle) {
-      return { error: "회비를 받는 경우 금액과 납부 주기를 입력해주세요.", success: false };
+      return { error: t.errors.enterFee, success: false };
     }
   }
 
   if (!advisorName || !advisorDepartment || !advisorEmail) {
-    return { error: "지도교수 성명, 소속 학과/전공, 학교 이메일을 입력해주세요.", success: false };
+    return { error: t.errors.enterAdvisor, success: false };
   }
 
   if (!EMAIL_PATTERN.test(advisorEmail)) {
-    return { error: "지도교수 학교 이메일 형식이 올바르지 않습니다.", success: false };
+    return { error: t.errors.invalidAdvisorEmail, success: false };
   }
 
   if (!advisorStudentConsent) {
-    return { error: "지도교수와 사전 협의하여 동의를 받았는지 확인해주세요.", success: false };
+    return { error: t.errors.confirmAdvisor, success: false };
   }
 
   if (!confirmedClubRules) {
-    return { error: "동아리 운영규정과 표준 동아리 회칙을 확인했는지 체크해주세요.", success: false };
+    return { error: t.errors.confirmRead, success: false };
   }
 
   if (!agreeRules) {
-    return { error: "준수사항에 동의해야 신청할 수 있습니다.", success: false };
+    return { error: t.errors.agreeRules, success: false };
   }
 
   // 회장·총무는 회원 명단에 자동 포함된다(중복 방지를 위해 총무가 회장과
@@ -258,7 +262,7 @@ export async function submitClubApplication(
 
   if (allFounders.length < MIN_FOUNDERS) {
     return {
-      error: `회원은 최소 ${MIN_FOUNDERS}명 이상이어야 합니다. (현재 ${allFounders.length}명)`,
+      error: fill(t.errors.minimumMembers, { min: String(MIN_FOUNDERS), count: String(allFounders.length) }),
       success: false,
     };
   }
@@ -267,11 +271,11 @@ export async function submitClubApplication(
   const internationalCount = allFounders.filter((f) => f.nationality === "international").length;
 
   if (koreanCount < MIN_KOREAN_FOUNDERS) {
-    return { error: "한국인 회원이 1명 이상 포함되어야 합니다.", success: false };
+    return { error: t.errors.koreanMemberRequired, success: false };
   }
 
   if (internationalCount < MIN_INTERNATIONAL_FOUNDERS) {
-    return { error: "외국인 회원이 1명 이상 포함되어야 합니다.", success: false };
+    return { error: t.errors.internationalMemberRequired, success: false };
   }
 
   const cookieStore = await cookies();
@@ -293,11 +297,15 @@ export async function submitClubApplication(
       language,
       established_at: establishedAt,
       purpose,
+      purpose_en: field(formData, "purpose_en") || null,
       activity_plan: activityPlan,
+      activity_plan_en: field(formData, "activity_plan_en") || null,
       monthly_activities: monthlyActivities,
       meeting_day: meetingDay || null,
+      meeting_day_en: field(formData, "meeting_day_en") || null,
       meeting_time: meetingTime || null,
       meeting_location: meetingLocation || null,
+      meeting_location_en: field(formData, "meeting_location_en") || null,
       president_department: presidentDepartment || null,
       president_student_id: presidentStudentId || null,
       president_contact: presidentContact,
@@ -333,7 +341,7 @@ export async function submitClubApplication(
 
   if (insertError || !application) {
     console.error("club_applications insert failed", insertError);
-    return { error: "신청서 저장 중 오류가 발생했습니다. 다시 시도해주세요.", success: false };
+    return { error: t.errors.saveFailed, success: false };
   }
 
   const { error: foundersError } = await supabase.from("club_application_founders").insert(
@@ -351,7 +359,7 @@ export async function submitClubApplication(
   if (foundersError) {
     console.error("club_application_founders insert failed", foundersError);
     return {
-      error: "회원 명단 저장 중 오류가 발생했습니다. 다시 시도해주세요.",
+      error: t.errors.foundersSaveFailed,
       success: false,
     };
   }

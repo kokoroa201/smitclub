@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Clapperboard, Coffee, Dumbbell, MessageCircle, Plus, Salad, Sparkles, UserPlus } from "lucide-react";
 import { CATEGORY_ICON, CATEGORY_ACCENT, DEFAULT_CATEGORY_ACCENT } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
-import { clubName, categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
+import { clubText, clubName, categoryLabel, getDictionary, type Locale } from "@/lib/i18n";
 
 export type ClubListItem = {
   slug: string;
@@ -11,7 +11,9 @@ export type ClubListItem = {
   nameEn: string | null;
   category: string;
   description: string | null;
+  descriptionEn?: string | null;
   activities: string | null;
+  activitiesEn?: string | null;
   status: string;
   coverImageUrl: string | null;
 };
@@ -25,13 +27,15 @@ export type ClubListItem = {
 // CTA는 코랄을 쓰지 않는다 — 강조점이 여러 군데로 흩어지지 않게.
 export function ClubListCard({ club, locale }: { club: ClubListItem; locale: Locale }) {
   const t = getDictionary(locale).clubCard;
+  const description = clubText(club.description, club.descriptionEn, locale);
+  const activities = clubText(club.activities, club.activitiesEn, locale);
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
   const accent = CATEGORY_ACCENT[club.category] ?? DEFAULT_CATEGORY_ACCENT;
   const isRecruiting = club.status === "recruiting";
 
   // "주 1회 정기 모임 · 주제 토론 · ..." 형식일 때 맨 앞의 핵심 정기 모임
   // 정보만 분류색으로 강조하고, 나머지는 차분한 회색으로 둔다.
-  const [keyActivity, ...restActivityParts] = (club.activities ?? "").split(" · ");
+  const [keyActivity, ...restActivityParts] = (activities ?? "").split(" · ");
   const restActivity = restActivityParts.length > 0 ? ` · ${restActivityParts.join(" · ")}` : "";
 
   return (
@@ -53,7 +57,6 @@ export function ClubListCard({ club, locale }: { club: ClubListItem; locale: Loc
             <div className="min-w-0">
               <h3 className="truncate text-lg font-bold tracking-tight text-foreground sm:text-xl">
                 {clubName(club.name, club.nameEn, locale)}
-                {locale === "ko" && club.nameEn && <span className="ml-1.5 font-medium text-muted-foreground">({club.nameEn})</span>}
               </h3>
               <span className={`text-xs font-semibold sm:text-sm ${accent.text}`}>{categoryLabel(club.category, locale)}</span>
             </div>
@@ -63,13 +66,13 @@ export function ClubListCard({ club, locale }: { club: ClubListItem; locale: Loc
           </div>
         </div>
 
-        {club.description && (
+        {description && (
           <p className="line-clamp-2 text-[0.8125rem] leading-normal text-muted-foreground sm:text-base sm:leading-relaxed in-data-[font-size=large]:text-sm in-data-[font-size=large]:leading-relaxed">
-            {club.description}
+            {description}
           </p>
         )}
 
-        {club.activities && (
+        {activities && (
           <div className="flex items-center gap-1.5 text-xs sm:text-sm">
             <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="truncate text-muted-foreground">

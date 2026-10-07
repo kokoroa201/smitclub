@@ -3,16 +3,16 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AlertTriangle, BadgeCheck, Clock, FileEdit as FileEditIcon, Sparkles, ThumbsUp, XCircle, type LucideIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { categoryLabel, type Locale } from "@/lib/i18n";
+import { categoryLabel, clubName, fill, getDictionary, type Locale } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { requestOwnPasswordReset } from "@/lib/actions/auth";
 import { EditContactForm } from "@/components/profile/edit-contact-form";
-import { ClubStatusBadge, APPLICATION_STATUS_LABEL, MembershipStatusBadge } from "@/components/admin/status-badge";
+import { ClubStatusBadge, MembershipStatusBadge } from "@/components/admin/status-badge";
 import { CATEGORY_ICON, CATEGORY_TONE } from "@/lib/constants/category-icons";
 import { CLUB_CATEGORIES } from "@/lib/constants/categories";
 import { ALL_DEPARTMENTS } from "@/lib/constants/departments";
-import { ROLE_LABEL } from "@/lib/constants/roles";
+import { formatDate } from "@/lib/i18n/format";
 
 // 0009 이전 가입자는 학과·전공을 고정 목록 대신 자유 입력(profile_private.
 // affiliation, 예: "미디어비즈니스학과")으로 받았다. department가 아직
@@ -57,6 +57,7 @@ type PrivateProfileRow = {
 type ApplicationRow = {
   id: string;
   club_name: string;
+  club_name_en: string | null;
   status: string;
   created_at: string;
 };
@@ -68,6 +69,7 @@ type MembershipRow = {
   clubs: {
     id: string;
     name: string;
+    name_en: string | null;
     slug: string;
     category: string;
     cover_image_url: string | null;
@@ -86,6 +88,7 @@ export default async function MyPage(props: PageProps<"/my">) {
 
   const cookieStore = await cookies();
   const locale = await getLocale();
+  const t = getDictionary(locale).account;
   const supabase = createClient(cookieStore);
 
   const {
@@ -105,7 +108,7 @@ export default async function MyPage(props: PageProps<"/my">) {
 
   const { data: applicationsData } = await supabase
     .from("club_applications")
-    .select("id, club_name, status, created_at")
+    .select("id, club_name, club_name_en, status, created_at")
     .eq("applicant_id", profile.id)
     .order("created_at", { ascending: false })
     .returns<ApplicationRow[]>();
@@ -113,7 +116,7 @@ export default async function MyPage(props: PageProps<"/my">) {
 
   const { data: membershipsData } = await supabase
     .from("club_memberships")
-    .select("id, status, applied_at, clubs(id, name, slug, category, cover_image_url, status)")
+    .select("id, status, applied_at, clubs(id, name, name_en, slug, category, cover_image_url, status)")
     .eq("user_id", profile.id)
     .order("applied_at", { ascending: false })
     .returns<MembershipRow[]>();
@@ -133,17 +136,18 @@ export default async function MyPage(props: PageProps<"/my">) {
       <h1 className="text-2xl font-bold text-foreground">MY</h1>
 
       <section className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-card p-6">
-        <h2 className="text-lg font-bold text-foreground">내 정보</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.profile}</h2>
 
         <div className="flex flex-col gap-2">
-          <InfoRow label="이름" value={profile.name} />
-          <InfoRow label="이메일" value={email} />
-          <InfoRow label="학번" value={privateData?.student_id || "-"} />
-          <InfoRow label="역할" value={ROLE_LABEL[profile.role] ?? profile.role} />
+          <InfoRow label={t.name} value={profile.name} />
+          <InfoRow label={t.email} value={email} />
+          <InfoRow label={t.studentId} value={privateData?.student_id || "-"} />
+          <InfoRow label={t.role} value={(t.roles as Record<string, string>)[profile.role] ?? profile.role} />
         </div>
 
         <div className="border-t border-border pt-4">
           <EditContactForm
+            locale={locale}
             initialContact={privateData?.contact ?? ""}
             initialDepartment={privateData?.department || normalizeLegacyDepartment(privateData?.affiliation)}
           />
@@ -151,14 +155,14 @@ export default async function MyPage(props: PageProps<"/my">) {
       </section>
 
       <section className="mt-8 flex flex-col gap-3 rounded-card border border-border bg-card p-6">
-        <h2 className="text-lg font-bold text-foreground">계정 보안</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.security}</h2>
         <p className="text-sm text-muted-foreground">
-          비밀번호가 노출되었거나 변경이 필요하면 등록된 이메일로 재설정 링크를 보낼 수 있습니다.
+          {t.securityHint}
         </p>
 
         {securitySent && (
           <p className="rounded-md bg-blue-soft px-3 py-2 text-sm text-blue-dark">
-            등록된 이메일({maskEmail(email)})로 비밀번호 재설정 링크를 보냈습니다.
+            {fill(t.securitySent, { email: maskEmail(email) })}
           </p>
         )}
 
@@ -167,48 +171,48 @@ export default async function MyPage(props: PageProps<"/my">) {
             type="submit"
             className="w-fit rounded-full bg-coral px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
           >
-            비밀번호 변경 링크 보내기
+            {t.sendReset}
           </button>
         </form>
       </section>
 
       {myClub && (
         <section className="mt-8 flex items-center justify-between gap-3 rounded-card border border-border bg-card p-4">
-          <p className="text-sm text-foreground">회장으로 등록된 동아리의 소개·대표사진·활동·SNS·모집글을 관리할 수 있습니다.</p>
+          <p className="text-sm text-foreground">{t.manageHint}</p>
           <Link
             href="/my/club"
             className="shrink-0 rounded-full bg-coral px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
           >
-            내 동아리 관리
+            {t.manageClub}
           </Link>
         </section>
       )}
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold text-foreground">내 동아리 신청</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.applications}</h2>
         {applications.length === 0 ? (
           <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">신청한 동아리가 없습니다.</p>
+            <p className="text-sm text-muted-foreground">{t.noApplications}</p>
             <Link
               href="/clubs/new"
               className="shrink-0 rounded-full bg-coral px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
             >
-              동아리 개설 신청
+              {t.startClub}
             </Link>
           </div>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
             {applications.map((application) => (
-              <ApplicationCard key={application.id} application={application} />
+              <ApplicationCard key={application.id} application={application} locale={locale} />
             ))}
           </div>
         )}
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold text-foreground">가입 신청 현황</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.memberships}</h2>
         {memberships.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">가입 신청한 동아리가 없습니다.</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t.noMemberships}</p>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
             {memberships.map((membership) =>
@@ -229,9 +233,9 @@ export default async function MyPage(props: PageProps<"/my">) {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold text-foreground">가입한 동아리</h2>
+        <h2 className="text-lg font-bold text-foreground">{t.joined}</h2>
         {joinedClubs.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">가입한 동아리가 없습니다.</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t.noJoined}</p>
         ) : (
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {joinedClubs.map((club) => (
@@ -255,9 +259,12 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function ApplicationCard({
   application,
+  locale,
 }: {
-  application: { id: string; club_name: string; status: string; created_at: string };
+  application: { id: string; club_name: string; club_name_en: string | null; status: string; created_at: string };
+  locale: Locale;
 }) {
+  const t = getDictionary(locale).account;
   const style = STATUS_STYLE[application.status] ?? STATUS_STYLE.draft;
   const StatusIcon = style.icon;
   const initial = application.club_name.trim().charAt(0) || "?";
@@ -269,10 +276,10 @@ function ApplicationCard({
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-white ${style.solid}`}
         >
           <StatusIcon className="h-3 w-3" />
-          {APPLICATION_STATUS_LABEL[application.status] ?? application.status}
+          {(getDictionary(locale).status.application as Record<string, string>)[application.status] ?? application.status}
         </span>
         <span className="shrink-0 text-[11px] text-muted-foreground">
-          {new Date(application.created_at).toLocaleDateString("ko-KR")}
+          {formatDate(application.created_at, locale)}
         </span>
       </div>
       <div className="mt-2 flex items-center gap-2.5">
@@ -281,12 +288,12 @@ function ApplicationCard({
         >
           {initial}
         </div>
-        <p className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">{application.club_name}</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">{clubName(application.club_name, application.club_name_en, locale)}</p>
         <Link
           href={`/club-applications/${application.id}/documents/registration`}
           className="shrink-0 text-[11px] font-bold text-coral hover:underline"
         >
-          신청서 보기
+          {t.viewApplication}
         </Link>
       </div>
     </div>
@@ -297,7 +304,7 @@ function MyClubCard({
   club,
   locale,
 }: {
-  club: { id: string; name: string; slug: string; category: string; cover_image_url: string | null; status: string };
+  club: { id: string; name: string; name_en: string | null; slug: string; category: string; cover_image_url: string | null; status: string };
   locale: Locale;
 }) {
   const categoryIndex = CLUB_CATEGORIES.indexOf(club.category as (typeof CLUB_CATEGORIES)[number]);
@@ -314,7 +321,7 @@ function MyClubCard({
         <CategoryIcon className="h-4 w-4" strokeWidth={2} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-foreground">{club.name}</p>
+        <p className="truncate text-sm font-bold text-foreground">{clubName(club.name, club.name_en, locale)}</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">{categoryLabel(club.category, locale)}</p>
       </div>
       <ClubStatusBadge status={club.status} locale={locale} />

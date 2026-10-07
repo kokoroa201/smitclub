@@ -1,5 +1,8 @@
 "use server";
 
+import { getDictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -25,6 +28,7 @@ async function getOrigin() {
 }
 
 export async function signUp(formData: FormData) {
+  const t = getDictionary(await getLocale()).account;
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("password_confirm") ?? "");
@@ -34,20 +38,20 @@ export async function signUp(formData: FormData) {
   const contact = digitsOnly(String(formData.get("contact") ?? "").trim());
 
   if (!email || !password || !name) {
-    redirect(`/signup?error=${encodeURIComponent("이메일, 비밀번호, 이름은 필수입니다.")}`);
+    redirect(`/signup?error=${encodeURIComponent(t.errors.required)}`);
   }
 
   if (password.length < 6) {
-    redirect(`/signup?error=${encodeURIComponent("비밀번호는 6자 이상이어야 합니다.")}`);
+    redirect(`/signup?error=${encodeURIComponent(t.errors.shortPassword)}`);
   }
 
   if (!isValidDepartment(department)) {
-    redirect(`/signup?error=${encodeURIComponent("학과·전공은 제공된 목록에서 선택해주세요.")}`);
+    redirect(`/signup?error=${encodeURIComponent(t.errors.invalidDepartment)}`);
   }
 
   if (password !== passwordConfirm) {
     const params = new URLSearchParams({
-      error: "비밀번호가 일치하지 않습니다.",
+      error: t.errors.passwordMismatch,
       name,
       student_id: studentId,
       department,
@@ -60,7 +64,7 @@ export async function signUp(formData: FormData) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -77,10 +81,12 @@ export async function signUp(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
+  if (!data.session) redirect("/login?signup=1");
   redirect("/");
 }
 
 export async function signIn(formData: FormData) {
+  const t = getDictionary(await getLocale()).account;
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
@@ -92,8 +98,8 @@ export async function signIn(formData: FormData) {
   if (error) {
     const friendlyMessage =
       error.message === "Invalid login credentials"
-        ? "이메일 또는 비밀번호가 일치하지 않습니다. (Email or password is incorrect.)"
-        : error.message;
+        ? t.errors.invalidCredentials
+        : error.message === "Email not confirmed" ? t.errors.emailUnconfirmed : error.message;
 
     redirect(`/login?${new URLSearchParams({ error: friendlyMessage }).toString()}`);
   }

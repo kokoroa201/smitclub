@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { categoryLabel, clubName, fill, getDictionary } from "@/lib/i18n";
+import { categoryLabel, clubText, clubName, fill, getDictionary } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { CATEGORY_ICON } from "@/lib/constants/category-icons";
 import { ClubStatusBadge } from "@/components/admin/status-badge";
@@ -15,16 +15,21 @@ type ClubDetail = {
   category: string;
   status: string;
   description: string | null;
+  description_en: string | null;
   cover_image_url: string | null;
   activities: string | null;
+  activities_en: string | null;
   meeting_day: string | null;
+  meeting_day_en: string | null;
   meeting_time: string | null;
   meeting_location: string | null;
+  meeting_location_en: string | null;
   founded_year: number | null;
   advisor_name: string | null;
   advisor_department: string | null;
   sns_url: string | null;
   recruiting_post: string | null;
+  recruiting_post_en: string | null;
 };
 
 export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) {
@@ -34,20 +39,23 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
   const t = getDictionary(locale);
   const supabase = createClient(cookieStore);
 
-  const { data: club } = await supabase
-    .from("clubs")
-    .select(
-      "slug, name, name_en, category, status, description, cover_image_url, activities, meeting_day, meeting_time, meeting_location, founded_year, advisor_name, advisor_department, sns_url, recruiting_post",
-    )
-    .eq("slug", slug)
-    .single<ClubDetail>();
+  const readClub = (columns: string) => supabase.from("clubs").select(columns).eq("slug", slug).single<ClubDetail>();
+  let clubResult = await readClub("slug, name, name_en, category, status, description, description_en, cover_image_url, activities, activities_en, meeting_day, meeting_day_en, meeting_time, meeting_location, meeting_location_en, founded_year, advisor_name, advisor_department, sns_url, recruiting_post, recruiting_post_en");
+  if (clubResult.error?.code === "42703" || clubResult.error?.code === "PGRST204") {
+    clubResult = await readClub("slug, name, name_en, category, status, description, description_en, cover_image_url, activities, meeting_day, meeting_time, meeting_location, founded_year, advisor_name, advisor_department, sns_url, recruiting_post");
+  }
+  const club = clubResult.data;
 
   if (!club) {
     notFound();
   }
 
+  const description = clubText(club.description, club.description_en, locale);
+  const activities = clubText(club.activities, club.activities_en, locale);
+  const recruitingPost = clubText(club.recruiting_post, club.recruiting_post_en, locale);
+  const meetingLocation = clubText(club.meeting_location, club.meeting_location_en, locale);
   const CategoryIcon = CATEGORY_ICON[club.category as keyof typeof CATEGORY_ICON] ?? Sparkles;
-  const meetingInfo = [club.meeting_day, club.meeting_time].filter(Boolean).join(" · ");
+  const meetingInfo = [clubText(club.meeting_day, club.meeting_day_en, locale), club.meeting_time].filter(Boolean).join(" · ");
 
   // 지도교수 정보는 학생에게 성명·소속 학과/전공만 공개한다. 학교
   // 이메일·확인 메모·확인일시·확인자는 관리자 전용 정보라 이 페이지에서는
@@ -79,9 +87,6 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
               </span>
               <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                 {clubName(club.name, club.name_en, locale)}
-                {locale === "ko" && club.name_en && (
-                  <span className="ml-2 text-base font-medium text-muted-foreground">({club.name_en})</span>
-                )}
               </h1>
             </div>
             <ClubStatusBadge status={club.status} locale={locale} />
@@ -96,17 +101,17 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
             </Link>
           )}
 
-          {club.description && (
+          {description && (
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-base">
-              {club.description}
+              {description}
             </p>
           )}
 
           <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
-            {club.activities && (
+            {activities && (
               <div className="flex items-start gap-2">
                 <Sparkles className="h-4 w-4 shrink-0 translate-y-0.5" />
-                <span className="whitespace-pre-wrap">{club.activities}</span>
+                <span className="whitespace-pre-wrap">{activities}</span>
               </div>
             )}
             {meetingInfo && (
@@ -115,10 +120,10 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
                 <span>{t.clubDetail.meeting} · {meetingInfo}</span>
               </div>
             )}
-            {club.meeting_location && (
+            {meetingLocation && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 shrink-0" />
-                <span>{club.meeting_location}</span>
+                <span>{meetingLocation}</span>
               </div>
             )}
             {club.founded_year && <div>{t.clubDetail.founded} · {club.founded_year}</div>}
@@ -138,11 +143,11 @@ export default async function ClubDetailPage(props: PageProps<"/clubs/[slug]">) 
             )}
           </div>
 
-          {club.recruiting_post && (
+          {recruitingPost && (
             <div className="border-t border-border pt-4">
               <h2 className="text-sm font-bold text-foreground">{t.clubDetail.recruitment}</h2>
               <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {club.recruiting_post}
+                {recruitingPost}
               </p>
             </div>
           )}

@@ -2,13 +2,14 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { newsTitle } from "@/lib/news-sync/presentation";
 
 const SOURCE_CLASS: Record<string, string> = {
   student_council: "bg-purple-soft text-purple-dark",
   school_academic: "bg-blue-soft text-blue-dark",
 };
 
-type NoticePreview = { id: string; source: string; title: string; published_at: string };
+type NoticePreview = { id: string; source: string; title: string; title_en: string | null; title_en_source: string | null; published_at: string };
 type EventPreview = { id: string; title: string; starts_on: string; ends_on: string | null };
 
 function formatEventRange(startsOn: string, endsOn: string | null): string {
@@ -32,10 +33,11 @@ export async function NewsPreview({ locale }: { locale: Locale }) {
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const todayStr = now.toISOString().slice(0, 10);
 
-  const [{ data: noticesData }, { data: eventsData }] = await Promise.all([
+  const [{ data: noticesData, error: noticesError }, { data: eventsData }] = await Promise.all([
     supabase
       .from("notices")
-      .select("id, source, title, published_at")
+      .select("id, source, title, title_en, title_en_source, published_at")
+      .in("source", ["student_council", "school_academic"])
       .order("published_at", { ascending: false })
       .limit(3)
       .returns<NoticePreview[]>(),
@@ -65,7 +67,7 @@ export async function NewsPreview({ locale }: { locale: Locale }) {
           <h3 className="text-sm font-bold text-muted-foreground">{t.recentNotices}</h3>
           {notices.length === 0 ? (
             <p className="rounded-xl border border-border bg-white p-4 text-sm text-muted-foreground">
-              {t.noNotices}
+              {noticesError ? getDictionary(locale).newsPage.loadError : t.noNotices}
             </p>
           ) : (
             notices.map((notice) => {
@@ -82,7 +84,7 @@ export async function NewsPreview({ locale }: { locale: Locale }) {
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${style.className}`}>
                     {style.label}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{notice.title}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{newsTitle(notice, locale)}</span>
                 </Link>
               );
             })

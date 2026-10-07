@@ -1,5 +1,8 @@
 "use server";
 
+import { getDictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/server";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -11,6 +14,7 @@ import { notify } from "@/lib/notify";
 // 'applied' 고정, 모집중 동아리만 허용)가 여기서 벗어난 값을 그대로 다시
 // 막아준다.
 export async function applyToClub(clubId: string, formData: FormData) {
+  const dictionary = getDictionary(await getLocale());
   const profile = await getCurrentProfile();
   if (!profile) {
     redirect("/login");
@@ -30,7 +34,7 @@ export async function applyToClub(clubId: string, formData: FormData) {
   }
 
   if (club.status !== "recruiting") {
-    redirect(`/clubs/${club.slug}?error=${encodeURIComponent("현재 가입 신청을 받지 않는 동아리입니다.")}`);
+    redirect(`/clubs/${club.slug}?error=${encodeURIComponent(dictionary.clubJoin.closed)}`);
   }
 
   const motivation = String(formData.get("motivation") ?? "").trim();
@@ -43,7 +47,7 @@ export async function applyToClub(clubId: string, formData: FormData) {
 
   if (error) {
     const message =
-      error.code === "23505" ? "이미 이 동아리에 가입 신청하셨습니다." : "가입 신청 중 오류가 발생했습니다.";
+      error.code === "23505" ? dictionary.clubJoin.alreadyApplied : dictionary.clubJoin.saveFailed;
     redirect(`/clubs/${club.slug}/join?error=${encodeURIComponent(message)}`);
   }
 
@@ -67,6 +71,7 @@ export async function applyToClub(clubId: string, formData: FormData) {
 // 트리거(applied -> approved/rejected로만, reviewed_by/reviewed_at은 본인
 // 계정·현재 시각으로만)가 이중으로 막아준다.
 export async function reviewMembership(membershipId: string, decision: "approved" | "rejected") {
+  const dictionary = getDictionary(await getLocale());
   const profile = await getCurrentProfile();
   if (!profile) {
     redirect("/login");
@@ -82,7 +87,7 @@ export async function reviewMembership(membershipId: string, decision: "approved
     .single<{ id: string; status: string; user_id: string; clubs: { name: string } | null }>();
 
   if (!membership || membership.status !== "applied") {
-    redirect(`/my/club?error=${encodeURIComponent("이미 처리되었거나 존재하지 않는 신청입니다.")}`);
+    redirect(`/my/club?error=${encodeURIComponent(dictionary.clubManage.errors.reviewUnavailable)}`);
   }
 
   const { error } = await supabase
@@ -96,7 +101,7 @@ export async function reviewMembership(membershipId: string, decision: "approved
 
   if (error) {
     console.error("club_memberships review failed", error);
-    redirect(`/my/club?error=${encodeURIComponent("가입 신청 처리 중 오류가 발생했습니다.")}`);
+    redirect(`/my/club?error=${encodeURIComponent(dictionary.clubManage.errors.reviewFailed)}`);
   }
 
   const clubName = membership.clubs?.name ?? "동아리";

@@ -5,11 +5,15 @@ import { createClient } from "@/utils/supabase/server";
 import { getDictionary } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n/server";
 import { formatDate } from "@/lib/i18n/format";
+import { newsTitle, type NewsSource } from "@/lib/news-sync/presentation";
 
 type NoticeDetail = {
   id: string;
-  source: "student_council" | "school_academic";
+  source: NewsSource;
   title: string;
+  title_en: string | null;
+  title_en_source: string | null;
+  has_en_attachment: boolean;
   body: string | null;
   summary: string | null;
   source_url: string | null;
@@ -25,7 +29,7 @@ export default async function NoticeDetailPage(props: PageProps<"/news/[id]">) {
 
   const { data: notice } = await supabase
     .from("notices")
-    .select("id, source, title, body, summary, source_url, published_at")
+    .select("id, source, title, title_en, title_en_source, has_en_attachment, body, summary, source_url, published_at")
     .eq("id", id)
     .single<NoticeDetail>();
 
@@ -48,9 +52,12 @@ export default async function NoticeDetailPage(props: PageProps<"/news/[id]">) {
         </span>
       </div>
 
-      <h1 className="mt-2 text-xl font-extrabold text-foreground sm:text-2xl">{notice.title}</h1>
+      <h1 className="mt-2 text-xl font-extrabold text-foreground sm:text-2xl">{newsTitle(notice, locale)}</h1>
+      {notice.source === "school_academic" && notice.has_en_attachment && (
+        <p className="mt-2 text-xs font-semibold text-blue-dark">{t.newsPage.enAttachment}</p>
+      )}
 
-      {notice.body ? (
+      {locale === "en" && notice.source !== "student_council" ? null : notice.body ? (
         <p className="mt-6 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-base">{notice.body}</p>
       ) : notice.summary ? (
         <p className="mt-6 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-base">{notice.summary}</p>
